@@ -32,7 +32,7 @@
      * Example:
      *
      *   <script type="text/javascript">
-     *       var Speakap = { appId: "{{app_id|safe}}", signedRequest: "{{signed_request|safe}}" };
+     *       var Speakap = { appId: "YOUR_APP_ID", signedRequest: "SIGNED_REQUEST_PARAMS" };
      *   </script>
      *   <script type="text/javascript" src="js/jquery.min.js"></script>
      *   <script type="text/javascript" src="js/speakap.js"></script>
