@@ -1,0 +1,22 @@
+{
+    "name": "speakap/sdk",
+    "description": "The Speakap SDK",
+    "license" : "proprietary",
+    "autoload": {
+        "psr-0": {
+            "Speakap\\SDK": [ "src/" ],
+            "Speakap\\Tests": [ "tests/" ]
+        }
+    },
+    "config": {
+        "bin-dir": "bin",
+        "notify-on-install": false
+    },
+    "require": {
+        "php": ">=5.4.10"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "4.0.*"
+	},
+    "minimum-stability": "dev"
+}
