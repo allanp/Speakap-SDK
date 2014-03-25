@@ -1,7 +1,7 @@
 {
     "name": "speakap/sdk",
     "description": "The Speakap SDK",
-    "license" : "proprietary",
+    "license" : "MIT",
     "autoload": {
         "psr-0": {
             "Speakap\\Tests": [ "php/tests/" ],
