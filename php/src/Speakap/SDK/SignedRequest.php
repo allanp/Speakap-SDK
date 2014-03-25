@@ -2,6 +2,8 @@
 
 namespace Speakap\SDK;
 
+use \Speakap\Date\ExtendedDateTime;
+
 class SignedRequest
 {
     /**
@@ -76,8 +78,8 @@ class SignedRequest
             throw new \InvalidArgumentException('Missing payload properties, got: '. print_r($payloadProperties, true));
         }
 
-        $this->payload = $this->decodePayload($payload);
-        parse_str($this->payload, $this->decodedPayload);
+        $this->payload = ($payload);
+        $this->decodedPayload = $payloadProperties;
 
         return $this;
     }
@@ -110,9 +112,8 @@ class SignedRequest
      */
     public function __toString()
     {
-        return $this->encodePayload($this->getSelfSignedRequest($this->appSecret, $this->decodedPayload));
+        return $this->getSelfSignedRequest($this->appSecret, $this->decodedPayload);
     }
-
 
     /**
      * Whether or not the request is within a sane window.
@@ -125,13 +126,13 @@ class SignedRequest
      */
     protected function isWithinWindow($signatureWindowSize, array $requestParameters)
     {
-        $issuedAt = \DateTime::createFromFormat(\DATE_ISO8601, $requestParameters['issuedAt']);
+        $issuedAt = ExtendedDateTime::createFromFormat(\DateTime::ISO8601, $requestParameters['issuedAt']);
 
-        if (! $issuedAt instanceof \DateTime) {
+        if (! $issuedAt instanceof ExtendedDateTime) {
             throw new \InvalidArgumentException('The timestamp in the "issuedAt" parameter is invalid.');
         }
 
-        $now = new \DateTime();
+        $now = new ExtendedDateTime();
 
         $diff = $now->getTimestamp() - $issuedAt->getTimestamp();
 
@@ -159,7 +160,15 @@ class SignedRequest
             unset($requestParameters['signature']);
         }
 
-        $signature = hash_hmac('sha256', $this->encodePayload(http_build_query($requestParameters)), $secret, false);
+        $signature = base64_encode(
+            hash_hmac(
+                'sha256',
+                http_build_query($requestParameters),
+                $secret,
+                false
+            )
+        );
+
         $requestParameters['signature'] = $signature;
 
         return http_build_query($requestParameters);
@@ -195,8 +204,7 @@ class SignedRequest
      */
     protected function decodePayloadToArray($payload)
     {
-        $decodedPayload = $this->decodePayload($payload);
-        parse_str($decodedPayload, $payloadProperties);
+        parse_str($payload, $payloadProperties);
 
         return $payloadProperties;
     }
@@ -210,7 +218,7 @@ class SignedRequest
      */
     protected function decodePayload($payload)
     {
-        return rawurldecode($payload);
+        return urldecode($payload);
     }
 
     /**
@@ -222,6 +230,6 @@ class SignedRequest
      */
     protected function encodePayload($payload)
     {
-        return rawurlencode($payload);
+        return urlencode($payload);
     }
 }

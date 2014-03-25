@@ -3,6 +3,7 @@
 namespace Speakap\Tests;
 
 use Speakap\SDK\SignedRequest;
+use Speakap\Date\ExtendedDateTime;
 
 /**
  * Speakap 2014
@@ -128,6 +129,24 @@ class SignedRequestTest extends \PHPUnit_Framework_TestCase
         $signedRequest->setPayload($payLoad);
     }
 
+
+    /**
+     * @group raw
+     */
+    public function testByRawPayload()
+    {
+        $payLoad = 'appData=&'.
+            'issuedAt=2014-03-25T10%3A27%3A03.219%2B0000&'.
+            'locale=en-US&'.
+            'networkEID=08e1e1eadc000e6c&userEID=08e1e1eead0dc968&'.
+            'signature=ZjAwZGZhZWFmYTRhNDcwOWQ0NWU4NjJjZjA3NDcxOTBlNDIyOWRjN2VkYjE3ZDhlZTU5Yzg5ZGI4ZDBkM2RkMw%3D%3D';
+
+        $signedRequest = new SignedRequest('000a000000000006', 'legless lizards', 9999999999);
+        $signedRequest->setPayload($payLoad);
+
+        $this->assertTrue($signedRequest->isValid());
+    }
+
     /**
      * Modify "now" by relative terms
      * @see http://www.php.net/manual/en/datetime.modify.php
@@ -138,10 +157,10 @@ class SignedRequestTest extends \PHPUnit_Framework_TestCase
      */
     private function createISO8601FromModification($modification)
     {
-        $dt = new \DateTime('now');
+        $dt = new ExtendedDateTime('now');
         $dt->modify($modification);
 
-        return $dt->format(\DATE_ISO8601);
+        return $dt->format(\DateTime::ISO8601);
     }
 
     /**
@@ -155,7 +174,7 @@ class SignedRequestTest extends \PHPUnit_Framework_TestCase
     {
         $properties = array(
             'appData' => '',
-            'issuedAt' => (new \DateTime())->format(\DATE_ISO8601),
+            'issuedAt' => (new ExtendedDateTime())->format(\DATE_ISO8601),
             'locale' => 'en-US',
             'networkEID' => '0000000000000001',
             'userEID' => '0000000000000002',
@@ -178,9 +197,8 @@ class SignedRequestTest extends \PHPUnit_Framework_TestCase
         $properties = $this->getDefaultProperties($customProperties);
         $properties['signature'] = $this->getSignature($secret, $properties);
 
-        return rawurlencode(http_build_query($properties));
+        return http_build_query($properties);
     }
-
 
     /**
      * Generate the signature from an array of properties
@@ -195,6 +213,6 @@ class SignedRequestTest extends \PHPUnit_Framework_TestCase
         // The signature should never be part of the signature creating process.
         unset($properties['signature']);
 
-        return hash_hmac('sha256', rawurlencode(http_build_query($properties)), $secret, false);
+        return base64_encode(hash_hmac('sha256', http_build_query($properties), $secret, false));
     }
 }

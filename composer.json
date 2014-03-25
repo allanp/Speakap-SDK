@@ -4,8 +4,8 @@
     "license" : "proprietary",
     "autoload": {
         "psr-0": {
-            "Speakap\\SDK": [ "php/src/" ],
-            "Speakap\\Tests": [ "php/tests/" ]
+            "Speakap\\Tests": [ "php/tests/" ],
+            "Speakap": [ "php/src/" ]
         }
     },
     "config": {
