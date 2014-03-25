@@ -113,16 +113,24 @@ class SignedRequest
         return $this->encodePayload($this->getSelfSignedRequest($this->appSecret, $this->decodedPayload));
     }
 
+
     /**
      * Whether or not the request is within a sane window.
      *
      * @param integer $signatureWindowSize
      * @param array   $requestParameters
+     *
+     * @throws \InvalidArgumentException
      * @return boolean
      */
     protected function isWithinWindow($signatureWindowSize, array $requestParameters)
     {
         $issuedAt = \DateTime::createFromFormat(\DATE_ISO8601, $requestParameters['issuedAt']);
+
+        if (! $issuedAt instanceof \DateTime) {
+            throw new \InvalidArgumentException('The timestamp in the "issuedAt" parameter is invalid.');
+        }
+
         $now = new \DateTime();
 
         $diff = $now->getTimestamp() - $issuedAt->getTimestamp();
