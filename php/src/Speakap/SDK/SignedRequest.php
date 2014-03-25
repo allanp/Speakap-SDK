@@ -148,11 +148,10 @@ class SignedRequest
     /**
      * Whether or not the request is within a sane window.
      *
-     * @param integer $signatureWindowSize
+     * @param integer   $signatureWindowSize
      * @param \DateTime $issuedAt
      *
      * @throws \InvalidArgumentException
-     * @internal param array $requestParameters
      *
      * @return boolean
      */
@@ -191,12 +190,11 @@ class SignedRequest
         return http_build_query($requestParameters);
     }
 
-
     /**
      * Generate the signature, based on the request parameters
      *
      * @param string $secret
-     * @param array $requestParameters
+     * @param array  $requestParameters
      *
      * @return string
      */
