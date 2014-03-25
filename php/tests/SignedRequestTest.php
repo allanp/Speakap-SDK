@@ -185,6 +185,17 @@ class SignedRequestTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
+     * @expectedException \RuntimeException
+     */
+    public function testIsValidBeforeSetPayload()
+    {
+        $signedRequest = new SignedRequest('foo', 'secret', 60);
+        $signedRequest->isValid();
+
+        $this->fail('Expecting the isValid() method to generate an exception, since no payload is defined.');
+    }
+
+    /**
      * Modify "now" by relative terms
      *
      * @see http://www.php.net/manual/en/datetime.modify.php

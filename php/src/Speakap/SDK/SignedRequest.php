@@ -60,6 +60,7 @@ class SignedRequest
      * @param string $payload typically set via: file_get_contents('php://input');
      *
      * @throws \InvalidArgumentException
+     *
      * @return $this
      */
     public function setPayload($payload)
@@ -103,10 +104,16 @@ class SignedRequest
     /**
      * Whether or not the payload is valid
      *
+     * @throws \RuntimeException
+     *
      * @return boolean
      */
     public function isValid()
     {
+        if ($this->payload === null) {
+            throw new \RuntimeException('No payload has been defined, please use setPayload()');
+        }
+
         if ($this->payload !== $this->getSelfSignedRequest($this->appSecret, $this->decodedPayload)) {
             // The payload doesn't match
             return false;
@@ -153,7 +160,7 @@ class SignedRequest
         $diff = $now->getTimestamp() - $issuedAt->getTimestamp();
 
         // The diff must be less than, or equal to the window size. To protect against overflow possibilities
-        // we test if the differences is equal to, or greater than 0.
+        // we also test if the differences is equal to, or greater than 0.
         if ($diff <= $signatureWindowSize && $diff >= 0) {
             return true;
         }
