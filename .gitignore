@@ -1,4 +1,4 @@
-bin/
+php/bin/
 vendor/
 composer.lock
 
