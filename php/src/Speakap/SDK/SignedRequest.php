@@ -64,13 +64,19 @@ class SignedRequest
     }
 
     /**
-     * @param $payload string, typically set via: file_get_contents('php://input');
+     * @param string $payload typically set via: file_get_contents('php://input');
      *
+     * @throws \InvalidArgumentException
      * @return $this
      */
     public function setPayload($payload)
     {
-        $this->payload = rawurldecode($payload);
+        $payloadProperties = $this->decodePayloadToArray($payload);
+        if ( ! $this->isValidPayload($payloadProperties)) {
+            throw new \InvalidArgumentException('Missing payload properties, got: '. print_r($payloadProperties, true));
+        }
+
+        $this->payload = $this->decodePayload($payload);
         parse_str($this->payload, $this->decodedPayload);
 
         return $this;
@@ -94,6 +100,17 @@ class SignedRequest
         }
 
         return true;
+    }
+
+    /**
+     * This method returns an encoded signed request. It does not re-use the original input,
+     * but instead signs and encodes the properties.
+     *
+     * @return string
+     */
+    public function __toString()
+    {
+        return $this->encodePayload($this->getSelfSignedRequest($this->appSecret, $this->decodedPayload));
     }
 
     /**
@@ -134,9 +151,69 @@ class SignedRequest
             unset($requestParameters['signature']);
         }
 
-        $signature = hash_hmac('sha256', rawurlencode(http_build_query($requestParameters)), $secret, false);
+        $signature = hash_hmac('sha256', $this->encodePayload(http_build_query($requestParameters)), $secret, false);
         $requestParameters['signature'] = $signature;
 
         return http_build_query($requestParameters);
+    }
+
+    /**
+     * Validate the existence of the payload properties.
+     *
+     * @param array $payloadProperties
+     *
+     * @return bool
+     */
+    protected function isValidPayload(array $payloadProperties)
+    {
+        $defaultPayload = array(
+            'appData' => null,
+            'issuedAt' => null,
+            'locale' => null,
+            'networkEID' => null,
+            'userEID' => null,
+            'signature' => null
+        );
+
+        return count($defaultPayload) <= count(array_intersect_key($defaultPayload, $payloadProperties));
+    }
+
+    /**
+     * Decode the payload string and convert it to an associative array.
+     *
+     * @param string $payload
+     *
+     * @return array
+     */
+    protected function decodePayloadToArray($payload)
+    {
+        $decodedPayload = $this->decodePayload($payload);
+        parse_str($decodedPayload, $payloadProperties);
+
+        return $payloadProperties;
+    }
+
+    /**
+     * Decodes a RFC3986 encoded signed request payload
+     *
+     * @param string $payload
+     *
+     * @return string
+     */
+    protected function decodePayload($payload)
+    {
+        return rawurldecode($payload);
+    }
+
+    /**
+     * Encode a string conform RFC3986.
+     *
+     * @param $payload
+     *
+     * @return string
+     */
+    protected function encodePayload($payload)
+    {
+        return rawurlencode($payload);
     }
 }

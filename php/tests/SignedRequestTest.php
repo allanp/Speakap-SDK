@@ -100,6 +100,34 @@ class SignedRequestTest extends \PHPUnit_Framework_TestCase
         );
     }
 
+    public function testIfToStringWorksAsExpected()
+    {
+        $payLoad = $this->getSignedPayload('secret');
+
+        $signedRequest = new SignedRequest('foo', 'secret', 60);
+        $signedRequest->setPayload($payLoad);
+
+        $this->assertEquals($payLoad, (string) $signedRequest);
+    }
+
+    /**
+     * @expectedException \InvalidArgumentException
+     */
+    public function testIfInvalidArgumentsThrowAnException()
+    {
+        $properties = $this->getDefaultProperties();
+
+        // Remove an expected property
+        unset($properties['issuedAt']);
+
+        $properties['signature'] = $this->getSignature('secret', $properties);
+        $payLoad = rawurlencode(http_build_query($properties));
+
+
+        $signedRequest = new SignedRequest('foo', 'secret', 60);
+        $signedRequest->setPayload($payLoad);
+    }
+
     /**
      * Modify "now" by relative terms
      * @see http://www.php.net/manual/en/datetime.modify.php
@@ -112,6 +140,7 @@ class SignedRequestTest extends \PHPUnit_Framework_TestCase
     {
         $dt = new \DateTime('now');
         $dt->modify($modification);
+
         return $dt->format(\DATE_ISO8601);
     }
 
@@ -122,10 +151,10 @@ class SignedRequestTest extends \PHPUnit_Framework_TestCase
      *
      * @return array
      */
-    private function getProperties(array $customProperties = array())
+    private function getDefaultProperties(array $customProperties = array())
     {
         $properties = array(
-            'appData' => null,
+            'appData' => '',
             'issuedAt' => (new \DateTime())->format(\DATE_ISO8601),
             'locale' => 'en-US',
             'networkEID' => '0000000000000001',
@@ -146,11 +175,26 @@ class SignedRequestTest extends \PHPUnit_Framework_TestCase
      */
     private function getSignedPayload($secret, array $customProperties = array())
     {
-        $properties = $this->getProperties($customProperties);
-        unset($properties['signature']);
-
-        $properties['signature'] = hash_hmac('sha256', rawurlencode(http_build_query($properties)), $secret, false);
+        $properties = $this->getDefaultProperties($customProperties);
+        $properties['signature'] = $this->getSignature($secret, $properties);
 
         return rawurlencode(http_build_query($properties));
+    }
+
+
+    /**
+     * Generate the signature from an array of properties
+     *
+     * @param string $secret
+     * @param array $properties
+     *
+     * @return string
+     */
+    private function getSignature($secret, array $properties)
+    {
+        // The signature should never be part of the signature creating process.
+        unset($properties['signature']);
+
+        return hash_hmac('sha256', rawurlencode(http_build_query($properties)), $secret, false);
     }
 }
