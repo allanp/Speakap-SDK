@@ -3,6 +3,8 @@
 namespace Speakap\SDK;
 
 use \Speakap\Date\ExtendedDateTime;
+use Speakap\SDK\Exception\ExpiredSignatureException;
+use Speakap\SDK\Exception\InvalidSignatureException;
 
 class SignedRequest
 {
@@ -66,6 +68,8 @@ class SignedRequest
     }
 
     /**
+     * Set the raw payload. Typically used in conjunction with isValid()
+     *
      * @param string $payload typically set via: file_get_contents('php://input');
      *
      * @throws \InvalidArgumentException
@@ -78,10 +82,35 @@ class SignedRequest
             throw new \InvalidArgumentException('Missing payload properties, got: '. print_r($payloadProperties, true));
         }
 
-        $this->payload = ($payload);
+        $this->payload = $payload;
         $this->decodedPayload = $payloadProperties;
 
         return $this;
+    }
+
+    /**
+     * @param array $params
+     *
+     * @throws \InvalidArgumentException
+     *
+     * @return bool
+     */
+    public function validateSignature(array $params)
+    {
+        if ( ! $this->isValidPayload($params)) {
+            throw new \InvalidArgumentException('Missing payload properties, got: '. print_r($params, true));
+        }
+
+        if ($params['signature'] !== $this->getSignatureFromParameters($this->appSecret, $params)) {
+            throw new InvalidSignatureException('Invalid signature, got: '. print_r($params, true));
+        }
+
+        $issuedAt = ExtendedDateTime::createFromFormat(\DateTime::ISO8601, $params['issuedAt']);
+        if ( ! $this->isWithinWindow($this->signatureWindowSize, $issuedAt)) {
+            throw new ExpiredSignatureException('Expired signature, got: '. print_r($params, true));
+        }
+
+        return true;
     }
 
     /**
@@ -96,7 +125,8 @@ class SignedRequest
             return false;
         }
 
-        if ( ! $this->isWithinWindow($this->signatureWindowSize, $this->decodedPayload)) {
+        $issuedAt = ExtendedDateTime::createFromFormat(\DateTime::ISO8601, $this->decodedPayload['issuedAt']);
+        if ( ! $this->isWithinWindow($this->signatureWindowSize, $issuedAt)) {
             // The date of the request does not fall in the allowed window size.
             return false;
         }
@@ -119,17 +149,17 @@ class SignedRequest
      * Whether or not the request is within a sane window.
      *
      * @param integer $signatureWindowSize
-     * @param array   $requestParameters
+     * @param \DateTime $issuedAt
      *
      * @throws \InvalidArgumentException
+     * @internal param array $requestParameters
+     *
      * @return boolean
      */
-    protected function isWithinWindow($signatureWindowSize, array $requestParameters)
+    protected function isWithinWindow($signatureWindowSize, \DateTime $issuedAt)
     {
-        $issuedAt = ExtendedDateTime::createFromFormat(\DateTime::ISO8601, $requestParameters['issuedAt']);
-
         if (! $issuedAt instanceof ExtendedDateTime) {
-            throw new \InvalidArgumentException('The timestamp in the "issuedAt" parameter is invalid.');
+            throw new \InvalidArgumentException('Invalid timestamp supplied.');
         }
 
         $now = new ExtendedDateTime();
@@ -156,11 +186,25 @@ class SignedRequest
      */
     protected function getSelfSignedRequest($secret, array $requestParameters)
     {
-        if (isset($requestParameters['signature'])) {
-            unset($requestParameters['signature']);
-        }
+        $requestParameters['signature'] = $this->getSignatureFromParameters($secret, $requestParameters);
 
-        $signature = base64_encode(
+        return http_build_query($requestParameters);
+    }
+
+
+    /**
+     * Generate the signature, based on the request parameters
+     *
+     * @param string $secret
+     * @param array $requestParameters
+     *
+     * @return string
+     */
+    protected function getSignatureFromParameters($secret, array $requestParameters)
+    {
+        unset($requestParameters['signature']);
+
+        return base64_encode(
             hash_hmac(
                 'sha256',
                 http_build_query($requestParameters),
@@ -168,10 +212,6 @@ class SignedRequest
                 false
             )
         );
-
-        $requestParameters['signature'] = $signature;
-
-        return http_build_query($requestParameters);
     }
 
     /**

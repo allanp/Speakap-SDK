@@ -40,7 +40,7 @@ class SignedRequestTest extends \PHPUnit_Framework_TestCase
             array($this->createISO8601FromModification('-100 year')),
 
             // Anything positive should fail
-            array($this->createISO8601FromModification('+1 second')),
+            array($this->createISO8601FromModification('+10 second')),
             array($this->createISO8601FromModification('+61 seconds')),
             array($this->createISO8601FromModification('+1 day')),
             array($this->createISO8601FromModification('+1 year')),
@@ -94,8 +94,8 @@ class SignedRequestTest extends \PHPUnit_Framework_TestCase
     public function validWindowProvider()
     {
         return array(
-            array($this->createISO8601FromModification('-60 seconds')),
-            array($this->createISO8601FromModification('-59 seconds')),
+            array($this->createISO8601FromModification('-58 seconds')),
+            array($this->createISO8601FromModification('-55 seconds')),
             array($this->createISO8601FromModification('-30 seconds')),
             array($this->createISO8601FromModification('-1 second')),
         );
@@ -124,11 +124,9 @@ class SignedRequestTest extends \PHPUnit_Framework_TestCase
         $properties['signature'] = $this->getSignature('secret', $properties);
         $payLoad = rawurlencode(http_build_query($properties));
 
-
         $signedRequest = new SignedRequest('foo', 'secret', 60);
         $signedRequest->setPayload($payLoad);
     }
-
 
     /**
      * @group raw
@@ -147,8 +145,48 @@ class SignedRequestTest extends \PHPUnit_Framework_TestCase
         $this->assertTrue($signedRequest->isValid());
     }
 
+    public function testValidateSignature()
+    {
+        $properties = $this->getDefaultProperties();
+        $properties['signature'] = $this->getSignature('secret', $properties);
+
+        $signedRequest = new SignedRequest('foo', 'secret');
+
+        $this->assertTrue($signedRequest->validateSignature($properties));
+    }
+
+    /**
+     * @expectedException Speakap\SDK\Exception\InvalidSignatureException
+     */
+    public function testValidateSignatureInvalidSignature()
+    {
+        $properties = $this->getDefaultProperties();
+        $properties['signature'] = $this->getSignature('secret', $properties);
+
+        $signedRequest = new SignedRequest('foo', 'INCORRECT');
+        $signedRequest->validateSignature($properties);
+    }
+
+    /**
+     * @expectedException Speakap\SDK\Exception\ExpiredSignatureException
+     */
+    public function testValidateSignatureExpiredSignature()
+    {
+        $properties = $this->getDefaultProperties(
+            array(
+                 'issuedAt' => $this->createISO8601FromModification('-61 seconds')
+            )
+        );
+
+        $properties['signature'] = $this->getSignature('secret', $properties);
+
+        $signedRequest = new SignedRequest('foo', 'secret', 60);
+        $signedRequest->validateSignature($properties);
+    }
+
     /**
      * Modify "now" by relative terms
+     *
      * @see http://www.php.net/manual/en/datetime.modify.php
      *
      * @param string $modification Example: '-1 day'
