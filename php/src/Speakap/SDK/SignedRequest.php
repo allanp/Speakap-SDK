@@ -14,11 +14,6 @@ class SignedRequest
     const DEFAULT_WINDOW = 60;
 
     /**
-     * The default hostname to verify the request with
-     */
-    const DEFAULT_HOSTNAME = 'https://api.speakap.io';
-
-    /**
      * A RFC3986 encoded string
      * @var string
      */
@@ -42,12 +37,6 @@ class SignedRequest
     private $appSecret;
 
     /**
-     * The default hostname to validate against
-     * @var string
-     */
-    private $hostName;
-
-    /**
      * The time window in seconds
      * @var int
      */
@@ -57,14 +46,12 @@ class SignedRequest
      * @param string $appId
      * @param string $appSecret
      * @param int    $signatureWindowSize Time in seconds that the window is considered valid
-     * @param string $hostName
      */
-    public function __construct($appId, $appSecret, $signatureWindowSize = null, $hostName = null)
+    public function __construct($appId, $appSecret, $signatureWindowSize = null)
     {
         $this->appId = $appId;
         $this->appSecret = $appSecret;
         $this->signatureWindowSize = $signatureWindowSize === null ? static::DEFAULT_WINDOW : $signatureWindowSize;
-        $this->hostName = $hostName === null ? static::DEFAULT_HOSTNAME : $hostName;
     }
 
     /**
