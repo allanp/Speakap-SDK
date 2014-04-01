@@ -122,7 +122,7 @@ class SignedRequestTest extends \PHPUnit_Framework_TestCase
         unset($properties['issuedAt']);
 
         $properties['signature'] = $this->getSignature('secret', $properties);
-        $payLoad = rawurlencode(http_build_query($properties));
+        $payLoad = urlencode(http_build_query($properties));
 
         $signedRequest = new SignedRequest('foo', 'secret', 60);
         $signedRequest->setPayload($payLoad);
@@ -137,7 +137,7 @@ class SignedRequestTest extends \PHPUnit_Framework_TestCase
             'issuedAt=2014-03-25T10%3A27%3A03.219%2B0000&'.
             'locale=en-US&'.
             'networkEID=08e1e1eadc000e6c&userEID=08e1e1eead0dc968&'.
-            'signature=ZjAwZGZhZWFmYTRhNDcwOWQ0NWU4NjJjZjA3NDcxOTBlNDIyOWRjN2VkYjE3ZDhlZTU5Yzg5ZGI4ZDBkM2RkMw%3D%3D';
+            'signature=8A366vpKRwnUXoYs8HRxkOQincftsX2O5ZyJ240NPdM%3D';
 
         $signedRequest = new SignedRequest('000a000000000006', 'legless lizards', 9999999999);
         $signedRequest->setPayload($payLoad);
@@ -262,6 +262,13 @@ class SignedRequestTest extends \PHPUnit_Framework_TestCase
         // The signature should never be part of the signature creating process.
         unset($properties['signature']);
 
-        return base64_encode(hash_hmac('sha256', http_build_query($properties), $secret, false));
+        return base64_encode(
+            hash_hmac(
+                'sha256',
+                http_build_query($properties),
+                $secret,
+                true
+            )
+        );
     }
 }
