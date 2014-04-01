@@ -261,7 +261,7 @@ _.extend(API.prototype, {
         }).join("&");
 
         var hmac = crypto.createHmac("sha256", this.appSecret);
-        var computedHash = new Buffer(hmac.update(queryString).digest("hex")).toString("base64");
+        var computedHash = hmac.update(queryString).digest("base64");
 
         if (computedHash !== signature) {
             throw new Error("Invalid signature: " + queryString);

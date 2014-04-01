@@ -201,7 +201,7 @@ class SignedRequest
                 'sha256',
                 http_build_query($requestParameters),
                 $secret,
-                false
+                true
             )
         );
     }
