@@ -55,28 +55,6 @@ class SignedRequest
     }
 
     /**
-     * Set the raw payload. Typically used in conjunction with isValid()
-     *
-     * @param string $payload typically set via: file_get_contents('php://input');
-     *
-     * @throws \InvalidArgumentException
-     *
-     * @return $this
-     */
-    public function setPayload($payload)
-    {
-        $payloadProperties = $this->decodePayloadToArray($payload);
-        if ( ! $this->isValidPayload($payloadProperties)) {
-            throw new \InvalidArgumentException('Missing payload properties, got: '. print_r($payloadProperties, true));
-        }
-
-        $this->payload = $payload;
-        $this->decodedPayload = $payloadProperties;
-
-        return $this;
-    }
-
-    /**
      * @param array $params
      *
      * @throws \InvalidArgumentException
@@ -102,41 +80,15 @@ class SignedRequest
     }
 
     /**
-     * Whether or not the payload is valid
+     * Get the encoded value. To be used in e.g. the Speakap JavaScript proxy
      *
-     * @throws \RuntimeException
-     *
-     * @return boolean
-     */
-    public function isValid()
-    {
-        if ($this->payload === null) {
-            throw new \RuntimeException('No payload has been defined, please use setPayload()');
-        }
-
-        if ($this->payload !== $this->getSelfSignedRequest($this->appSecret, $this->decodedPayload)) {
-            // The payload doesn't match
-            return false;
-        }
-
-        $issuedAt = ExtendedDateTime::createFromFormat(\DateTime::ISO8601, $this->decodedPayload['issuedAt']);
-        if ( ! $this->isWithinWindow($this->signatureWindowSize, $issuedAt)) {
-            // The date of the request does not fall in the allowed window size.
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * This method returns an encoded signed request. It does not re-use the original input,
-     * but instead signs and encodes the properties.
+     * @param array $params
      *
      * @return string
      */
-    public function __toString()
+    public function getSignedRequest(array $params)
     {
-        return $this->getSelfSignedRequest($this->appSecret, $this->decodedPayload);
+        return $this->getSelfSignedRequest($this->appSecret, $params);
     }
 
     /**
@@ -181,7 +133,7 @@ class SignedRequest
     {
         $requestParameters['signature'] = $this->getSignatureFromParameters($secret, $requestParameters);
 
-        return http_build_query($requestParameters);
+        return $this->parametersToQueryString($requestParameters);
     }
 
     /**
@@ -196,10 +148,12 @@ class SignedRequest
     {
         unset($requestParameters['signature']);
 
+        ksort($requestParameters);
+
         return base64_encode(
             hash_hmac(
                 'sha256',
-                http_build_query($requestParameters),
+                $this->parametersToQueryString($requestParameters),
                 $secret,
                 true
             )
@@ -228,40 +182,14 @@ class SignedRequest
     }
 
     /**
-     * Decode the payload string and convert it to an associative array.
+     * Convert an array to a query-string, RFC3986 encoded
      *
-     * @param string $payload
-     *
-     * @return array
-     */
-    protected function decodePayloadToArray($payload)
-    {
-        parse_str($payload, $payloadProperties);
-
-        return $payloadProperties;
-    }
-
-    /**
-     * Decodes a RFC3986 encoded signed request payload
-     *
-     * @param string $payload
+     * @param array $requestParameters
      *
      * @return string
      */
-    protected function decodePayload($payload)
+    protected function parametersToQueryString(array $requestParameters)
     {
-        return urldecode($payload);
-    }
-
-    /**
-     * Encode a string conform RFC3986.
-     *
-     * @param $payload
-     *
-     * @return string
-     */
-    protected function encodePayload($payload)
-    {
-        return urlencode($payload);
+        return http_build_query($requestParameters, null, null, PHP_QUERY_RFC3986);
     }
 }
