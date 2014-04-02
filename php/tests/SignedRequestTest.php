@@ -14,16 +14,17 @@ class SignedRequestTest extends \PHPUnit_Framework_TestCase
      * @dataProvider invalidWindowProvider
      *
      * @param string $issuedAt A ISO8601 formatted string
+     *
+     * @expectedException Speakap\SDK\Exception\ExpiredSignatureException
      */
-    public function testInvalidWindow($issuedAt)
+    public function testInvalidWindowButValidSecret($issuedAt)
     {
-        $payLoad = $this->getSignedPayload('secret', array('issuedAt' => $issuedAt));
+        $params = $this->getSignedPayloadAsArray('secret', array('issuedAt' => $issuedAt));
 
         $signedRequest = new SignedRequest('foo', 'secret', 60);
-        $signedRequest->setPayload($payLoad);
+        $signedRequest->validateSignature($params);
 
-
-        $this->assertFalse( $signedRequest->isValid() );
+        $this->fail('Expected an exception, but non was thrown.');
     }
 
     /**
@@ -48,19 +49,27 @@ class SignedRequestTest extends \PHPUnit_Framework_TestCase
         );
     }
 
+    /**
+     * @expectedException Speakap\SDK\Exception\InvalidSignatureException
+     */
     public function testInvalidSecretButValidWindow()
     {
-        $payLoad = $this->getSignedPayload('invalid secret');
+        $params = $this->getSignedPayloadAsArray('invalid secret');
 
         $signedRequest = new SignedRequest('foo', 'secret', 60);
-        $signedRequest->setPayload($payLoad);
+        $signedRequest->validateSignature($params);
 
-        $this->assertFalse( $signedRequest->isValid() );
+        $this->fail('Expected an exception, but non was thrown.');
     }
 
+    /**
+     * Expecting either InvalidSignatureException or ExpiredSignatureException, both extend InvalidArgumentException.
+     *
+     * @expectedException \InvalidArgumentException
+     */
     public function testInvalidSecretAndInvalidWindow()
     {
-        $payLoad = $this->getSignedPayload(
+        $params = $this->getSignedPayloadAsArray(
             'invalid secret',
             array(
                  'issuedAt' => $this->createISO8601FromModification('-61 seconds')
@@ -68,9 +77,9 @@ class SignedRequestTest extends \PHPUnit_Framework_TestCase
         );
 
         $signedRequest = new SignedRequest('foo', 'secret', 60);
-        $signedRequest->setPayload($payLoad);
+        $signedRequest->validateSignature($params);
 
-        $this->assertFalse( $signedRequest->isValid() );
+        $this->fail('Expected an exception, but non was thrown.');
     }
 
     /**
@@ -78,12 +87,11 @@ class SignedRequestTest extends \PHPUnit_Framework_TestCase
      */
     public function testValidInput($issuedAt)
     {
-        $payLoad = $this->getSignedPayload('secret', array('issuedAt' => $issuedAt));
+        $params = $this->getSignedPayloadAsArray('secret', array('issuedAt' => $issuedAt));
 
         $signedRequest = new SignedRequest('foo', 'secret', 60);
-        $signedRequest->setPayload($payLoad);
 
-        $this->assertTrue( $signedRequest->isValid() );
+        $this->assertTrue( $signedRequest->validateSignature($params) );
     }
 
     /**
@@ -101,19 +109,6 @@ class SignedRequestTest extends \PHPUnit_Framework_TestCase
         );
     }
 
-    public function testIfToStringWorksAsExpected()
-    {
-        $payLoad = $this->getSignedPayload('secret');
-
-        $signedRequest = new SignedRequest('foo', 'secret', 60);
-        $signedRequest->setPayload($payLoad);
-
-        $this->assertEquals($payLoad, (string) $signedRequest);
-    }
-
-    /**
-     * @expectedException \InvalidArgumentException
-     */
     public function testIfInvalidArgumentsThrowAnException()
     {
         $properties = $this->getDefaultProperties();
@@ -121,78 +116,43 @@ class SignedRequestTest extends \PHPUnit_Framework_TestCase
         // Remove an expected property
         unset($properties['issuedAt']);
 
-        $properties['signature'] = $this->getSignature('secret', $properties);
-        $payLoad = urlencode(http_build_query($properties));
-
         $signedRequest = new SignedRequest('foo', 'secret', 60);
-        $signedRequest->setPayload($payLoad);
+        try {
+            $signedRequest->validateSignature($properties);
+        } catch (\InvalidArgumentException $e) {
+            $this->assertFalse(
+                strpos($e->getMessage(), '[issuedAt] =>'),
+                'Expecting that the Exception messages does not contain the phrase "[issuedAt] =>".'
+            );
+
+            $this->assertTrue(
+                false !== strpos($e->getMessage(), '[signature] =>'),
+                'Expecting that the Exception messages does contain the phrase "[signature] =>".'
+            );
+        }
     }
 
     /**
-     * @group raw
+     * @dataProvider rawPayLoadProvider
      */
-    public function testByRawPayload()
+    public function testByRawPayload($payLoad)
     {
-        $payLoad = 'appData=&'.
-            'issuedAt=2014-03-25T10%3A27%3A03.219%2B0000&'.
-            'locale=en-US&'.
-            'networkEID=08e1e1eadc000e6c&userEID=08e1e1eead0dc968&'.
-            'signature=8A366vpKRwnUXoYs8HRxkOQincftsX2O5ZyJ240NPdM%3D';
-
         $signedRequest = new SignedRequest('000a000000000006', 'legless lizards', 9999999999);
-        $signedRequest->setPayload($payLoad);
 
-        $this->assertTrue($signedRequest->isValid());
+        $this->ourParseStr($payLoad, $params);
+        $this->assertTrue($signedRequest->validateSignature($params));
     }
 
-    public function testValidateSignature()
+    public function rawPayLoadProvider()
     {
-        $properties = $this->getDefaultProperties();
-        $properties['signature'] = $this->getSignature('secret', $properties);
-
-        $signedRequest = new SignedRequest('foo', 'secret');
-
-        $this->assertTrue($signedRequest->validateSignature($properties));
-    }
-
-    /**
-     * @expectedException Speakap\SDK\Exception\InvalidSignatureException
-     */
-    public function testValidateSignatureInvalidSignature()
-    {
-        $properties = $this->getDefaultProperties();
-        $properties['signature'] = $this->getSignature('secret', $properties);
-
-        $signedRequest = new SignedRequest('foo', 'INCORRECT');
-        $signedRequest->validateSignature($properties);
-    }
-
-    /**
-     * @expectedException Speakap\SDK\Exception\ExpiredSignatureException
-     */
-    public function testValidateSignatureExpiredSignature()
-    {
-        $properties = $this->getDefaultProperties(
-            array(
-                 'issuedAt' => $this->createISO8601FromModification('-61 seconds')
-            )
+        return array(
+            array('appData=&issuedAt=2014-04-02T13%3A20%3A09.066%2B0000&locale=en-US&networkEID=08e1e1eadc000e6c&userEID=08e1e1eead0dc968&signature=bx3MowIvCQ+gVp+LvkLQ9eSVMDhiYUUtCjJaCun0GQ4%3D'),
+            array('appData=&issuedAt=2014-04-02T13%3A22%3A09.100%2B0000&locale=en-US&networkEID=08e1e1eadc000e6c&userEID=08e1e1eead0dc968&signature=JqbZW8TRRPF+2crDOuDCNy1lIe08RPaAjkgLRjmupsc%3D'),
+            array('appData=&issuedAt=2014-04-02T13%3A22%3A35.352%2B0000&locale=en-US&networkEID=08e1e1eadc000e6c&userEID=08e1e1eead0dc968&signature=0GZV1GV7Ujz9HRfAp7uO4vqh/NlMvaLABRN5oGpw+9c%3D'),
+            array('appData=&issuedAt=2014-04-02T13%3A22%3A52.278%2B0000&locale=en-US&networkEID=08e1e1eadc000e6c&userEID=08e1e1eead0dc968&signature=ZT9VcEfqsnh0K9ogUoJovQn4qyT1wT1cz/WNzUQIEy8%3D'),
+            array('appData=&issuedAt=2014-04-02T13%3A23%3A16.805%2B0000&locale=en-US&networkEID=08e1e1eadc000e6c&userEID=08e1e1eead0dc968&signature=Lwo0n+sbnyNOQ3xG899eO5jtWKsDtd8vNVxepIEbMrY%3D'),
+            array('appData=&issuedAt=2014-04-02T13%3A23%3A54.824%2B0000&locale=en-US&networkEID=08e1e1eadc000e6c&userEID=08e1e1eead0dc968&signature=pwH3JBVdgBPjwWvaZXYvnqgX%2FRLj6I%2BXeIabqj%2BwkGk%3D'),
         );
-
-        $properties['signature'] = $this->getSignature('secret', $properties);
-
-        $signedRequest = new SignedRequest('foo', 'secret', 60);
-        $signedRequest->validateSignature($properties);
-    }
-
-    /**
-     * @expectedException \RuntimeException
-     */
-    public function testIsValidBeforeSetPayload()
-    {
-        $signedRequest = new SignedRequest('foo', 'secret', 60);
-        $signedRequest->isValid();
-
-        $this->fail('Expecting the isValid() method to generate an exception, since no payload is defined.');
     }
 
     /**
@@ -234,19 +194,17 @@ class SignedRequestTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * Provide a url-encoded and signed payload, based on the supplied and default properties
-     *
-     * @param $secret
+     * @param string $secret
      * @param array $customProperties
      *
-     * @return string
+     * @return array
      */
-    private function getSignedPayload($secret, array $customProperties = array())
+    private function getSignedPayloadAsArray($secret, array $customProperties = array())
     {
         $properties = $this->getDefaultProperties($customProperties);
         $properties['signature'] = $this->getSignature($secret, $properties);
 
-        return http_build_query($properties);
+        return $properties;
     }
 
     /**
@@ -262,13 +220,30 @@ class SignedRequestTest extends \PHPUnit_Framework_TestCase
         // The signature should never be part of the signature creating process.
         unset($properties['signature']);
 
+        ksort($properties);
+
         return base64_encode(
             hash_hmac(
                 'sha256',
-                http_build_query($properties),
+                http_build_query($properties, null, '&', PHP_QUERY_RFC3986),
                 $secret,
                 true
             )
         );
+    }
+
+    /**
+     * Follows the signature of parse_str() with the exception that it doesn't use urldecode() but rawurldecode()
+     *
+     * @param string $payload
+     * @param array $params
+     */
+    private function ourParseStr($payload, &$params)
+    {
+        $pairs = explode("&", $payload);
+        foreach ($pairs as $pair) {
+            list($k, $v) = array_map("rawurldecode", explode("=", $pair));
+            $params[$k] = $v;
+        }
     }
 }
