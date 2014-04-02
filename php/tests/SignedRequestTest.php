@@ -121,8 +121,13 @@ class SignedRequestTest extends \PHPUnit_Framework_TestCase
             $signedRequest->validateSignature($properties);
         } catch (\InvalidArgumentException $e) {
             $this->assertFalse(
-                strpos($e->getMessage(), 'issuedAt'),
-                'Expecting that the Exception messages does not contain the phrase "issuedAt".'
+                strpos($e->getMessage(), '[issuedAt] =>'),
+                'Expecting that the Exception messages does not contain the phrase "[issuedAt] =>".'
+            );
+
+            $this->assertTrue(
+                false !== strpos($e->getMessage(), '[signature] =>'),
+                'Expecting that the Exception messages does contain the phrase "[signature] =>".'
             );
         }
     }
