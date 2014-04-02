@@ -133,20 +133,26 @@ class SignedRequestTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @group raw
+     * @dataProvider rawPayLoadProvider
      */
-    public function testByRawPayload()
+    public function testByRawPayload($payLoad)
     {
-        $payLoad = 'appData=&'.
-            'issuedAt=2014-03-25T10%3A27%3A03.219%2B0000&'.
-            'locale=en-US&'.
-            'networkEID=08e1e1eadc000e6c&userEID=08e1e1eead0dc968&'.
-            'signature=qiL%2BG0Giflcudl4SjLZbLt7tKf6X2uE5vb%2Bn1ld1gwM%3D';
-
         $signedRequest = new SignedRequest('000a000000000006', 'legless lizards', 9999999999);
 
-        parse_str($payLoad, $params);
+        $this->ourParseStr($payLoad, $params);
         $this->assertTrue($signedRequest->validateSignature($params));
+    }
+
+    public function rawPayLoadProvider()
+    {
+        return array(
+            array('appData=&issuedAt=2014-04-02T13%3A20%3A09.066%2B0000&locale=en-US&networkEID=08e1e1eadc000e6c&userEID=08e1e1eead0dc968&signature=bx3MowIvCQ+gVp+LvkLQ9eSVMDhiYUUtCjJaCun0GQ4%3D'),
+            array('appData=&issuedAt=2014-04-02T13%3A22%3A09.100%2B0000&locale=en-US&networkEID=08e1e1eadc000e6c&userEID=08e1e1eead0dc968&signature=JqbZW8TRRPF+2crDOuDCNy1lIe08RPaAjkgLRjmupsc%3D'),
+            array('appData=&issuedAt=2014-04-02T13%3A22%3A35.352%2B0000&locale=en-US&networkEID=08e1e1eadc000e6c&userEID=08e1e1eead0dc968&signature=0GZV1GV7Ujz9HRfAp7uO4vqh/NlMvaLABRN5oGpw+9c%3D'),
+            array('appData=&issuedAt=2014-04-02T13%3A22%3A52.278%2B0000&locale=en-US&networkEID=08e1e1eadc000e6c&userEID=08e1e1eead0dc968&signature=ZT9VcEfqsnh0K9ogUoJovQn4qyT1wT1cz/WNzUQIEy8%3D'),
+            array('appData=&issuedAt=2014-04-02T13%3A23%3A16.805%2B0000&locale=en-US&networkEID=08e1e1eadc000e6c&userEID=08e1e1eead0dc968&signature=Lwo0n+sbnyNOQ3xG899eO5jtWKsDtd8vNVxepIEbMrY%3D'),
+            array('appData=&issuedAt=2014-04-02T13%3A23%3A54.824%2B0000&locale=en-US&networkEID=08e1e1eadc000e6c&userEID=08e1e1eead0dc968&signature=pwH3JBVdgBPjwWvaZXYvnqgX%2FRLj6I%2BXeIabqj%2BwkGk%3D'),
+        );
     }
 
     /**
@@ -219,10 +225,25 @@ class SignedRequestTest extends \PHPUnit_Framework_TestCase
         return base64_encode(
             hash_hmac(
                 'sha256',
-                http_build_query($properties, null, null, PHP_QUERY_RFC3986),
+                http_build_query($properties, null, '&', PHP_QUERY_RFC3986),
                 $secret,
                 true
             )
         );
+    }
+
+    /**
+     * Follows the signature of parse_str() with the exception that it doesn't use urldecode() but rawurldecode()
+     *
+     * @param string $payload
+     * @param array $params
+     */
+    private function ourParseStr($payload, &$params)
+    {
+        $pairs = explode("&", $payload);
+        foreach ($pairs as $pair) {
+            list($k, $v) = array_map("rawurldecode", explode("=", $pair));
+            $params[$k] = $v;
+        }
     }
 }

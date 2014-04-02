@@ -14,16 +14,9 @@ class SignedRequest
     const DEFAULT_WINDOW = 60;
 
     /**
-     * A RFC3986 encoded string
-     * @var string
+     * Should be the same value as ini_get('arg_separator.output') and should always be '&'
      */
-    private $payload;
-
-    /**
-     * The query string as elements
-     * @var array
-     */
-    private $decodedPayload;
+    const URL_ARG_SEPARATOR = '&';
 
     /**
      * @var string
@@ -190,6 +183,6 @@ class SignedRequest
      */
     protected function parametersToQueryString(array $requestParameters)
     {
-        return http_build_query($requestParameters, null, null, PHP_QUERY_RFC3986);
+        return http_build_query($requestParameters, null, static::URL_ARG_SEPARATOR, PHP_QUERY_RFC3986);
     }
 }
