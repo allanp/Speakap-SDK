@@ -155,6 +155,18 @@ class SignedRequestTest extends \PHPUnit_Framework_TestCase
         );
     }
 
+    public function testGetSignedParameters()
+    {
+        $secret = 'secret';
+        $signedRequest = new SignedRequest('not relevant', $secret, 9999999999);
+        $properties = $this->getDefaultProperties();
+
+        $verifyPayload = $this->getSignedPayloadAsArray($secret, $properties);
+        $signedParameters = $signedRequest->getSignedParameters($properties);
+
+        $this->assertEquals($verifyPayload['signature'], $signedParameters['signature']);
+    }
+
     /**
      * Modify "now" by relative terms
      *

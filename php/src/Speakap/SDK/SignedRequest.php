@@ -81,7 +81,21 @@ class SignedRequest
      */
     public function getSignedRequest(array $params)
     {
-        return $this->getSelfSignedRequest($this->appSecret, $params);
+        $params['signature'] = $this->getSignatureFromParameters($this->appSecret, $params);
+        return $this->parametersToQueryString($params);
+    }
+
+    /**
+     * Get the parameters, including the signature
+     *
+     * @param array $params
+     *
+     * @return array
+     */
+    public function getSignedParameters(array $params)
+    {
+        $params['signature'] = $this->getSignatureFromParameters($this->appSecret, $params);
+        return $params;
     }
 
     /**
