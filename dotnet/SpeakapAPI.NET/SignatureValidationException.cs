@@ -5,9 +5,9 @@ namespace SpeakapAPI
 	/// <summary>
 	/// Exception thrown when a signed request is invalid.
 	/// </summary>
-	public class SignatureValidationErrorException : Exception
+	public class SignatureValidationException : Exception
 	{
-		public SignatureValidationErrorException(string message)
+		public SignatureValidationException(string message)
 			: base(message)
 		{
 		}

@@ -128,7 +128,7 @@ namespace SpeakapAPI
 		/// <summary>
 		/// Validates the signature of a signed request.
 		/// </summary>
-		/// <exception cref="SpeakapAPI.SignatureValidationErrorException">Raises a SignatureValidationError if the signature doesn't match or the signed request is expired.</exception>
+		/// <exception cref="SignatureValidationException">Raises a SignatureValidationError if the signature doesn't match or the signed request is expired.</exception>
 		/// <param name="requestParams">Object containing POST parameters passed during the signed request.</param>
 		public void ValidateSignature(NameValueCollection requestParams)
 		{
@@ -142,7 +142,7 @@ namespace SpeakapAPI
 				throw new InvalidOperationException("AppSecret cannot be null.");
 
 			if (!requestParams.AllKeys.Contains("signature"))
-				throw new SignatureValidationErrorException("Parameters did not include a signature");
+				throw new SignatureValidationException("Parameters did not include a signature");
 
 			var signature = requestParams["signature"];
 
@@ -160,12 +160,12 @@ namespace SpeakapAPI
 			var computedHash = Convert.ToBase64String(inArray);
 
 			if (computedHash != signature)
-				throw new SignatureValidationErrorException(string.Format("Invalid signature: {0}", queryString));
+				throw new SignatureValidationException(string.Format("Invalid signature: {0}", queryString));
 
 			var issuedAt = DateTime.Parse(requestParams["issuedAt"], null, System.Globalization.DateTimeStyles.RoundtripKind);
 			var expiresAt = issuedAt.AddMinutes(SignatureWindowSize);
 			if (DateTime.Now > expiresAt)
-				throw new SignatureValidationErrorException("Expired signature");
+				throw new SignatureValidationException("Expired signature");
 		}
 
 		/// <summary>
