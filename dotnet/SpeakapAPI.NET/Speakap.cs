@@ -28,13 +28,8 @@ namespace SpeakapAPI
 	///     }");
 	///   
 	///   The response is JSON string result in case of success, it throws a SpeakapAPI.SpeakapApplicationException contains Code and Message in case of error.
-	/// 
-	///   WARNING: If you use this class to make requests on any other platform than Google App Engine,
-	///            the SSL certificate of the Speakap API service is not confirmed, leaving you
-	///            vulnerable to man-in-the-middle attacks. This is due to a limitation of the SSL
-	///            support in the Python framework. You are strongly advised to take your own
-	///            precautions to make sure the certificate is valid.
 	/// </summary>
+	/// TODO: Add TLS/SSL certificate support
 	public class Speakap
 	{
 		#region - Constants -
