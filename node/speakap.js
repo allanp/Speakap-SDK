@@ -158,7 +158,7 @@ _.extend(API.prototype, {
      *         (in case of an error).
      *
      * Note that if you want to make a POST request to an action (generally all REST endpoints
-     * without trailing slash), you should use the post_action() method instead, as this will use
+     * without trailing slash), you should use the postAction() method instead, as this will use
      * the proper formatting for the POST data.
      *
      * Example:
@@ -194,7 +194,7 @@ _.extend(API.prototype, {
      *
      * Example:
      *
-     *   speakapApi.post_action("/networks/" + networkId +
+     *   speakapApi.postAction("/networks/" + networkId +
      *                          "/messages/" + messageId + "/markread", function(error, result) {
      *       if (error) {
      *           // handle error
