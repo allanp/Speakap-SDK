@@ -32,6 +32,36 @@ function signedRequest(params) {
     }).join("&");
 }
 
+/**
+ * Validates the signature of a signed request.
+ *
+ * @param params Object containing POST parameters passed during the signed request.
+ * @param appSecret App secret the parameters should've been signed with.
+ *
+ * Throws an exception if the signature doesn't match or the signed request is expired.
+ */
+function validateSignature(params, appSecret) {
+
+    var signature = params.signature;
+
+    var keys = _.keys(params);
+    keys.sort();
+    var queryString = _.map(_.without(keys, "signature"), function(key) {
+        return percentEncode(key) + "=" + percentEncode(params[key]);
+    }).join("&");
+
+    var hmac = crypto.createHmac("sha256", appSecret);
+    var computedHash = hmac.update(queryString).digest("base64");
+
+    if (computedHash !== signature) {
+        throw new Error("Invalid signature: " + queryString);
+    }
+
+    var issuedAt = new Date(params.issuedAt).getTime();
+    if (Date.now() > issuedAt + SIGNATURE_WINDOW_SIZE) {
+        throw new Error("Expired signature");
+    }
+}
 
 /**
  * Speakap API wrapper.
@@ -298,40 +328,9 @@ _.extend(API.prototype, {
 
 });
 
-/**
- * Validates the signature of a signed request.
- *
- * @param params Object containing POST parameters passed during the signed request.
- * @param appSecret App secret the parameters should've been signed with.
- *
- * Throws an exception if the signature doesn't match or the signed request is expired.
- */
-function validateSignature(params, appSecret) {
-
-    var signature = params.signature;
-
-    var keys = _.keys(params);
-    keys.sort();
-    var queryString = _.map(_.without(keys, "signature"), function(key) {
-        return percentEncode(key) + "=" + percentEncode(params[key]);
-    }).join("&");
-
-    var hmac = crypto.createHmac("sha256", appSecret);
-    var computedHash = hmac.update(queryString).digest("base64");
-
-    if (computedHash !== signature) {
-        throw new Error("Invalid signature: " + queryString);
-    }
-
-    var issuedAt = new Date(params.issuedAt).getTime();
-    if (Date.now() > issuedAt + SIGNATURE_WINDOW_SIZE) {
-        throw new Error("Expired signature");
-    }
-}
-
 module.exports = {
-    API: API,
     percentEncode: percentEncode,
     signedRequest: signedRequest,
-    validateSignature: validateSignature
+    validateSignature: validateSignature,
+    API: API
 };
