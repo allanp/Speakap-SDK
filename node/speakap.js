@@ -306,7 +306,7 @@ _.extend(API.prototype, {
  *
  * Throws an exception if the signature doesn't match or the signed request is expired.
  */
-validateSignature: function(params, appSecret) {
+function validateSignature(params, appSecret) {
 
     var signature = params.signature;
 
