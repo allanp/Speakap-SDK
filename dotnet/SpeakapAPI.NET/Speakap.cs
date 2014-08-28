@@ -97,7 +97,7 @@ namespace SpeakapAPI
 		/// <param name="appSecret">MY_APP_SECRET</param>
 		/// <param name="signatureWindowSize">SignatureWindowSize in minutes, default is 1 minute</param>
 		public Speakap(string scheme, string hostname, string appId, string appSecret, int signatureWindowSize)
-			: this(scheme, hostname, appId, appSecret, signatureWindowSize, new Uri(new Uri(hostname.Replace("api.", "authenticator.")), "/oauth/v2/token").AbsoluteUri)
+			: this(scheme, hostname, appId, appSecret, signatureWindowSize, hostname.Replace("api.", "authenticator.") + "/oauth/v2/token")
 		{
 		}
 
@@ -140,15 +140,11 @@ namespace SpeakapAPI
 				throw new ArgumentException("requestParams.AllKeys cannot be null.");
 
 			if (!IsValidRequestParameters(requestParams))
-				throw new ArgumentException(string.Format("Required key is missing in requestParams. parameters: {0}", GetParameters(requestParams)));
+				throw new ArgumentException(string.Format("One of the parameters is missing. parameters: {0}", GetParameters(requestParams)));
 
-			var keys = requestParams.AllKeys.TakeWhile(k => k != "signature").OrderBy(k => k).ToList();
-			if(requestParams.AllKeys.Contains("signature"))
-			{
-				keys.Add("signature");
-			}
-
-			return string.Join("&", keys.Select(k => string.Format("{0}={1}", HttpUtility.UrlEncode(k), HttpUtility.UrlEncode(requestParams[k]))));
+			return string.Join("&", requestParams.AllKeys.TakeWhile(p => p != "signature")
+														 .OrderBy(p => p)
+														 .Select(p => string.Format("{0}={1}", p, Uri.EscapeDataString(requestParams[p]))));
 		}
 
 		private static string GetParameters(NameValueCollection requestParams)
@@ -157,24 +153,18 @@ namespace SpeakapAPI
 				return null;
 
 			var sb = new StringBuilder();
+			
 			foreach (var p in requestParams.AllKeys)
-			{
-				sb.AppendFormat("{0}:{1}&", p, requestParams[p].ToString());
-			}
+				sb.AppendFormat("{0}={1}\r\n", p, requestParams[p]);
+
 			return sb.ToString();
 		}
 
 		private static bool IsValidRequestParameters(NameValueCollection requestParams)
 		{
-			/*** 
-			 * TODO: 
-			 * 
-			 * var defaultKeys = new [] { "appData", "issuedAt", "locale", "networkEID", "userEID", "signature" };
-			 * 
-			 * return defaultKeys.Length <= requestParams.AllKeys.Intersect(defaultKeys, StringComparer.InvariantCultureIgnoreCase).Count();
-			*/
+			var defaultKeys = new [] { "appData", "issuedAt", "locale", "networkEID", "userEID", "signature" };
 
-			return true;
+			return defaultKeys.Length <= requestParams.AllKeys.Intersect(defaultKeys, StringComparer.InvariantCultureIgnoreCase).Count();
 		}
 
 		/// <summary>
@@ -224,7 +214,7 @@ namespace SpeakapAPI
 			var computedHash = Convert.ToBase64String(inArray);
 
 			if (computedHash != signature)
-				throw new SpeakapSignatureValidationException(string.Format("Invalid signature: {0}", queryString));
+				throw new SpeakapSignatureValidationException(string.Format("Invalid signature."));
 
 			var issuedAt = DateTime.Parse(requestParams["issuedAt"], null, System.Globalization.DateTimeStyles.RoundtripKind);
 			var expiresAt = issuedAt.AddMinutes(signatureWindowSize);
@@ -267,10 +257,9 @@ namespace SpeakapAPI
 		/// </summary>
 		/// <param name="signedRequest"></param>
 		/// <returns></returns>
-		public static DateTime GetIssuedAt(string signedRequest)
+		public static string GetIssuedAt(string signedRequest)
 		{
-			var dateTimeString = GetValueFromSignedRequest(signedRequest, "issuedAt");
-			return DateTime.Parse(dateTimeString, null, System.Globalization.DateTimeStyles.RoundtripKind);
+			return GetValueFromSignedRequest(signedRequest, "issuedAt");
 		}
 
 		/// <summary>
@@ -440,6 +429,8 @@ namespace SpeakapAPI
 		}
 
 		#endregion - OAuth 2.0 -
+
+		#region - Speakap API http://developers.speakap.io/portal/index.html -
 
 		/// <summary>
 		/// Performs a DELETE request to the Speakap API
@@ -667,6 +658,8 @@ namespace SpeakapAPI
 
 			throw new SpeakapApplicationException(-1001, string.Format("Status: {0}, Data: {1}", status, data));
 		}
+		
+		#endregion -  -
 	}
 
 	/// <summary>

@@ -18,3 +18,8 @@ Published/
 
 _ReSharper.*/
 *.dbmdl
+
+TestResults/
+*.Tests/
+*.vsmdi
+*.testsettings
