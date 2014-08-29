@@ -1,7 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Security.Cryptography;
 using System.Text;
@@ -97,7 +97,7 @@ namespace SpeakapAPI
 		/// <param name="appSecret">MY_APP_SECRET</param>
 		/// <param name="signatureWindowSize">SignatureWindowSize in minutes, default is 1 minute</param>
 		public Speakap(string scheme, string hostname, string appId, string appSecret, int signatureWindowSize)
-			: this(scheme, hostname, appId, appSecret, signatureWindowSize, hostname.Replace("api.", "authenticator.") + "/oauth/v2/token")
+			: this(scheme, hostname, appId, appSecret, signatureWindowSize, string.Format("{0}/oauth/v2/token", hostname.Replace("api.", "authenticator.").TrimEnd('/')))
 		{
 		}
 
@@ -142,22 +142,9 @@ namespace SpeakapAPI
 			if (!IsValidRequestParameters(requestParams))
 				throw new ArgumentException(string.Format("One of the parameters is missing. parameters: {0}", GetParameters(requestParams)));
 
-			var keys = new List<string>();
-			foreach (var key in requestParams.AllKeys)
-			{
-				if ("signature".Equals(key))
-					continue;
-				keys.Add(key);
-			}
-			keys.Sort(StringComparer.InvariantCulture);
-
-			var sb = new StringBuilder();
-			foreach (var key in keys)
-			{
-				sb.AppendFormat("{0}={1}&", key, Uri.EscapeDataString(requestParams[key]));
-			}
-
-			return sb.ToString().TrimEnd('&');
+			return string.Join("&", requestParams.AllKeys.TakeWhile(key => key != "signature")
+														 .OrderBy(key => key)
+														 .Select(key => string.Format("{0}={1}", key, Uri.EscapeDataString(requestParams[key]))));
 		}
 
 		private static string GetParameters(NameValueCollection requestParams)
@@ -165,39 +152,14 @@ namespace SpeakapAPI
 			if (requestParams == null)
 				return null;
 
-			var sb = new StringBuilder();
-			
-			foreach (var p in requestParams.AllKeys)
-				sb.AppendFormat("{0}={1}\r\n", p, requestParams[p]);
-
-			return sb.ToString();
+			return string.Join(Environment.NewLine, requestParams.AllKeys.Select(key => string.Format("{0}={1}\r\n", key, requestParams[key])));
 		}
 
 		private static bool IsValidRequestParameters(NameValueCollection requestParams)
 		{
 			var defaultKeys = new [] { "appData", "issuedAt", "locale", "networkEID", "userEID", "signature" };
 
-			var isValid = true;
-			foreach (var key in defaultKeys)
-			{
-				var hasKey = false;
-				foreach(var r in requestParams.AllKeys)
-				{
-					if (string.Equals(key, r, StringComparison.InvariantCulture))
-					{
-						hasKey = true;
-						break;
-					}
-				}
-
-				if (!hasKey)
-				{
-					isValid = false;
-					break;
-				}
-			}
-
-			return isValid;
+			return defaultKeys.Length <= requestParams.AllKeys.Intersect(defaultKeys, StringComparer.InvariantCultureIgnoreCase).Count();
 		}
 
 		/// <summary>
@@ -228,13 +190,7 @@ namespace SpeakapAPI
 			if (string.IsNullOrEmpty(appSecret))
 				throw new InvalidOperationException("AppSecret cannot be null.");
 
-			var hasSignature = false;
-			foreach(var key in requestParams.AllKeys)
-			{
-				if ("signature".Equals(key, StringComparison.InvariantCultureIgnoreCase))
-					hasSignature = true;
-			}
-			if (!hasSignature)
+			if (!requestParams.AllKeys.Contains("signature"))
 				throw new SpeakapSignatureValidationException("Parameters did not include a signature");
 
 			var signature = requestParams["signature"];
@@ -253,7 +209,7 @@ namespace SpeakapAPI
 			var computedHash = Convert.ToBase64String(inArray);
 
 			if (computedHash != signature)
-				throw new SpeakapSignatureValidationException(string.Format("Invalid signature. queryString: {0}. computedHash: {1} <> signature: {2}", queryString, computedHash, signature));
+				throw new SpeakapSignatureValidationException(string.Format("Invalid signature."));
 
 			var issuedAt = DateTime.Parse(requestParams["issuedAt"], null, System.Globalization.DateTimeStyles.RoundtripKind);
 			var expiresAt = issuedAt.AddMinutes(signatureWindowSize);
@@ -316,22 +272,16 @@ namespace SpeakapAPI
 			if (string.IsNullOrEmpty(signedRequest))
 				return null;
 
-			var signedRequests = signedRequest.Split(new[] { "&" }, StringSplitOptions.RemoveEmptyEntries);
-
-			var pair = string.Empty;
-			foreach (var s in signedRequests)
-			{
-				if (s.StartsWith(key))
-				{
-					pair = s;
-					break;
-				}
-			}
-
-			if (string.IsNullOrEmpty(pair))
+			if (string.IsNullOrEmpty(key))
 				return null;
 
-			return (pair.IndexOf('=') < 0 || pair.IndexOf('=') == pair.Length) ? "" : pair.Substring(pair.IndexOf('=') + 1);
+			// appData=&issuedAt=2014-01-01T00%3A00%3A00.000%2B0000&locale=en-US&networkEID=Fake_networkE1d&userEID=Fake_userE1d
+			var data = signedRequest.Split(new[] { "&" }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault(p => !string.IsNullOrEmpty(p) && p.StartsWith(key));
+
+			if (string.IsNullOrEmpty(data))
+				return null;
+
+			return (data.IndexOf('=') < 0 || data.IndexOf('=') == data.Length) ? string.Empty : data.Substring(data.IndexOf('=') + 1);
 		}
 
 		#endregion - SignedRequest -
@@ -413,6 +363,7 @@ namespace SpeakapAPI
 			var httpWebReq = (HttpWebRequest)WebRequest.Create(authenticatorUri);
 
 			httpWebReq.Method = POST;
+			httpWebReq.Host = new Uri(authenticatorUri).Host;
 			httpWebReq.ContentType = string.Format("{0}; charset=utf-8", SpeakapRequestHeaderConentTypes.ApplicationXWwwFormUrlencoded);
 			httpWebReq.KeepAlive = false;
 			httpWebReq.Headers.Add(HttpRequestHeader.Accept, SpeakapRequestHeaderAccept.ApplicationJson);
@@ -659,6 +610,7 @@ namespace SpeakapAPI
 			}
 
 			httpWebReq.Method = method;
+			httpWebReq.Host = Hostname;
 			httpWebReq.ContentType = "charset=utf-8";
 			httpWebReq.KeepAlive = false;
 
