@@ -131,7 +131,7 @@ namespace SpeakapAPI
 		/// </remarks>
 		/// <param name="requestParams">Object containing POST parameters passed during the signed request.</param>
 		/// <returns>Query string containing the parameters of the signed request.</returns>
-		public static string SignedRequest(NameValueCollection requestParams)
+		public static string SignedRequest(NameValueCollection requestParams, bool withSignature = false)
 		{
 			if (requestParams == null)
 				throw new ArgumentNullException("requestParams");
@@ -142,9 +142,18 @@ namespace SpeakapAPI
 			if (!IsValidRequestParameters(requestParams))
 				throw new ArgumentException(string.Format("One of the parameters is missing. parameters: {0}", GetParameters(requestParams)));
 
-			return string.Join("&", requestParams.AllKeys.TakeWhile(key => key != "signature")
-														 .OrderBy(key => key)
-														 .Select(key => string.Format("{0}={1}", key, Uri.EscapeDataString(requestParams[key]))));
+			var signedRequest = string.Join("&", requestParams.AllKeys.TakeWhile(key => key != "signature")
+																	  .OrderBy(key => key)
+																	  .Select(key => string.Format("{0}={1}", key, Uri.EscapeDataString(requestParams[key]))));
+
+			if (withSignature && requestParams.AllKeys.Contains("signature"))
+			{
+				signedRequest = string.Format("{0}{1}signature={2}", signedRequest, 
+																	 string.IsNullOrEmpty(signedRequest) ? string.Empty : "&", 
+																	 Uri.EscapeDataString(requestParams["signature"]));
+			}
+			
+			return signedRequest;
 		}
 
 		private static string GetParameters(NameValueCollection requestParams)
@@ -339,7 +348,6 @@ namespace SpeakapAPI
 		{
 			var messageBodyJson = string.Format("'grant_type':\"refresh_token\",'refresh_token':\"{0}\",'client_id':\"{1}\",'client_secret':\"{2}\"",
 												refreshToken, clientId, clientSecret);
-
 
 			string result = null;
 			var status = OAuth(messageBodyJson, out result);
