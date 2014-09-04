@@ -264,11 +264,6 @@
      *                          is used, depending on the value of the hasScripts option.
      *                context - Context in which to execute the promise callbacks.
      *                css - Array of URLs to CSS resources that should be included by the iframe.
-     *                includeSpeakapCSS - Boolean whether Speakap's "base.css" and "branding.css"
-     *                                    should be included. Default is true.
-     *                js - Array of URLs to JavaScript resources that should be loaded by the
-     *                     iframe. Note that you need to include your own reference to this
-     *                     speakap.js file if you want to be able to use this API from the iframe.
      *                hasScripts - If the content option is provided, this option has to be set to
      *                             true to enable the execution of scripts in the lightbox. It is
      *                             implicitly set to true if any JavaScript URLs are specified, but
@@ -279,6 +274,11 @@
      *                             unless you also a provide a position as fallback.
      *                height - Lightbox height in pixels. The minimum permitted height is 100
      *                         pixels, and the maximum permitted height is 540 pixels.
+     *                includeSpeakapCSS - Boolean whether Speakap's "base.css" and "branding.css"
+     *                                    should be included. Default is true.
+     *                js - Array of URLs to JavaScript resources that should be loaded by the
+     *                     iframe. Note that you need to include your own reference to this
+     *                     speakap.js file if you want to be able to use this API from the iframe.
      *                position - Position from the application manifest to load in the iframe. If
      *                           this option is provided, the first mechanism for loading the
      *                           content is used. For the purpose of validation, the name of the
