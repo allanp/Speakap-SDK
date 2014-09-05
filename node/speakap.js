@@ -3,9 +3,7 @@
 var crypto = require("crypto");
 var _ = require("lodash");
 
-
 var SIGNATURE_WINDOW_SIZE = 60 * 1000; // ms
-
 
 function percentEncode(string) {
 
@@ -34,6 +32,36 @@ function signedRequest(params) {
     }).join("&");
 }
 
+/**
+ * Validates the signature of a signed request.
+ *
+ * @param params Object containing POST parameters passed during the signed request.
+ * @param appSecret App secret the parameters should've been signed with.
+ *
+ * Throws an exception if the signature doesn't match or the signed request is expired.
+ */
+function validateSignature(params, appSecret) {
+
+    var signature = params.signature;
+
+    var keys = _.keys(params);
+    keys.sort();
+    var queryString = _.map(_.without(keys, "signature"), function(key) {
+        return percentEncode(key) + "=" + percentEncode(params[key]);
+    }).join("&");
+
+    var hmac = crypto.createHmac("sha256", appSecret);
+    var computedHash = hmac.update(queryString).digest("base64");
+
+    if (computedHash !== signature) {
+        throw new Error("Invalid signature: " + queryString);
+    }
+
+    var issuedAt = new Date(params.issuedAt).getTime();
+    if (Date.now() > issuedAt + SIGNATURE_WINDOW_SIZE) {
+        throw new Error("Expired signature");
+    }
+}
 
 /**
  * Speakap API wrapper.
@@ -158,7 +186,7 @@ _.extend(API.prototype, {
      *         (in case of an error).
      *
      * Note that if you want to make a POST request to an action (generally all REST endpoints
-     * without trailing slash), you should use the post_action() method instead, as this will use
+     * without trailing slash), you should use the postAction() method instead, as this will use
      * the proper formatting for the POST data.
      *
      * Example:
@@ -194,8 +222,8 @@ _.extend(API.prototype, {
      *
      * Example:
      *
-     *   speakapApi.post_action("/networks/" + networkId +
-     *                          "/messages/" + messageId + "/markread", function(error, result) {
+     *   speakapApi.postAction("/networks/" + networkId +
+     *                         "/messages/" + messageId + "/markread", function(error, result) {
      *       if (error) {
      *           // handle error
      *       } else {
@@ -241,36 +269,6 @@ _.extend(API.prototype, {
     put: function(path, data, callback) {
 
         this._request("PUT", path, JSON.stringify(data), "application/json", callback);
-    },
-
-    /**
-     * Validates the signature of a signed request.
-     *
-     * @param params Object containing POST parameters passed during the signed request.
-     *
-     * Throws an exception if the signature doesn't match or the signed request is expired.
-     */
-    validateSignature: function(params) {
-
-        var signature = params.signature;
-
-        var keys = _.keys(params);
-        keys.sort();
-        var queryString = _.map(_.without(keys, "signature"), function(key) {
-            return percentEncode(key) + "=" + percentEncode(params[key]);
-        }).join("&");
-
-        var hmac = crypto.createHmac("sha256", this.appSecret);
-        var computedHash = hmac.update(queryString).digest("base64");
-
-        if (computedHash !== signature) {
-            throw new Error("Invalid signature: " + queryString);
-        }
-
-        var issuedAt = new Date(params.issuedAt).getTime();
-        if (Date.now() > issuedAt + SIGNATURE_WINDOW_SIZE) {
-            throw new Error("Expired signature");
-        }
     },
 
     _request: function(method, path, data, contentType, callback) {
@@ -330,9 +328,9 @@ _.extend(API.prototype, {
 
 });
 
-
 module.exports = {
-    API: API,
     percentEncode: percentEncode,
-    signedRequest: signedRequest
+    signedRequest: signedRequest,
+    validateSignature: validateSignature,
+    API: API
 };
