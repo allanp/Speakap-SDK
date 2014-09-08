@@ -177,12 +177,13 @@ class SignedRequest
     protected function isValidPayload(array $payloadProperties)
     {
         $defaultPayload = array(
-            'appData' => null,
-            'issuedAt' => null,
-            'locale' => null,
+            'appData'    => null,
+            'issuedAt'   => null,
+            'locale'     => null,
             'networkEID' => null,
-            'userEID' => null,
-            'signature' => null
+            'userEID'    => null,
+            'role'       => null,
+            'signature'  => null
         );
 
         return count($defaultPayload) <= count(array_intersect_key($defaultPayload, $payloadProperties));
