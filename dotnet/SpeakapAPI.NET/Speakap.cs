@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Specialized;
 using System.IO;
-using System.Linq;
 using System.Net;
-using System.Security.Cryptography;
 using System.Text;
 using System.Web;
 
@@ -34,12 +32,13 @@ namespace SpeakapAPI
 	{
 		#region - Constants -
 
-		private const string DELETE = "DELETE";
-		private const string GET = "GET";
-		private const string POST = "POST";
-		private const string PUT = "PUT";
-
-		private const int DefaultSignatureWindowSize = 1; // minute
+		private class HTTP
+		{
+			internal const string DELETE = "DELETE";
+			internal const string GET = "GET";
+			internal const string POST = "POST";
+			internal const string PUT = "PUT";
+		}
 
 		#endregion - Constants -
 
@@ -55,383 +54,29 @@ namespace SpeakapAPI
 
 		public string AccessToken { get; private set; }
 
-		public int SignatureWindowSize { get; private set; }
-
-		public string AuthenticatorUri { get; private set; }
-
 		public string Accept { get; set; }
 
 		#endregion - Properties -
 
+		#region - Constructors - 
+
 		/// <summary>
 		/// 
 		/// </summary>
-		/// <param name="scheme">Scheme, default: "https"</param>
-		/// <param name="hostname">Hostname, default: "api.speakap.io"</param>
-		/// <param name="appId">MY_APP_ID</param>
-		/// <param name="appSecret">MY_APP_SECRET</param>
+		/// <param name="scheme">http or https</param>
+		/// <param name="hostname"></param>
+		/// <param name="appId"></param>
+		/// <param name="appSecret"></param>
 		public Speakap(string scheme, string hostname, string appId, string appSecret)
-			: this(scheme, hostname, appId, appSecret, DefaultSignatureWindowSize)
-		{
-		}
-
-		/// <summary>
-		/// 
-		/// </summary>
-		/// <param name="scheme"></param>
-		/// <param name="hostname"></param>
-		/// <param name="appId"></param>
-		/// <param name="appSecret"></param>
-		/// <param name="authenticatorUri"></param>
-		public Speakap(string scheme, string hostname, string appId, string appSecret, string authenticatorUri)
-			: this(scheme, hostname, appId, appSecret, DefaultSignatureWindowSize, authenticatorUri)
-		{
-		}
-
-		/// <summary>
-		/// 
-		/// </summary>
-		/// <param name="scheme">Scheme, default: "https"</param>
-		/// <param name="hostname">Hostname, default: "api.speakap.io"</param>
-		/// <param name="appId">MY_APP_ID</param>
-		/// <param name="appSecret">MY_APP_SECRET</param>
-		/// <param name="signatureWindowSize">SignatureWindowSize in minutes, default is 1 minute</param>
-		public Speakap(string scheme, string hostname, string appId, string appSecret, int signatureWindowSize)
-			: this(scheme, hostname, appId, appSecret, signatureWindowSize, string.Format("{0}/oauth/v2/token", hostname.Replace("api.", "authenticator.").TrimEnd('/')))
-		{
-		}
-
-		/// <summary>
-		/// 
-		/// </summary>
-		/// <param name="scheme"></param>
-		/// <param name="hostname"></param>
-		/// <param name="appId"></param>
-		/// <param name="appSecret"></param>
-		/// <param name="signatureWindowSize"></param>
-		/// <param name="authenticatorUri"></param>
-		public Speakap(string scheme, string hostname, string appId, string appSecret, int signatureWindowSize, string authenticatorUri)
 		{
 			Scheme = scheme;
 			Hostname = hostname;
 			AppId = appId;
 			AppSecret = appSecret;
-			SignatureWindowSize = signatureWindowSize;
-			AuthenticatorUri = authenticatorUri;
 			AccessToken = string.Format("{0}_{1}", AppId, AppSecret);
 		}
 
-		#region - SignedRequest http://developers.speakap.io/portal/tutorials/signed_request.html -
-
-		/// <summary>
-		/// Generates the signed request string from the parameters.
-		/// </summary>
-		/// <remarks> 
-		/// This method does not calculate a signature; it simply generates the signed request from the parameters including the signature.
-		/// </remarks>
-		/// <param name="requestParams">Object containing POST parameters passed during the signed request.</param>
-		/// <returns>Query string containing the parameters of the signed request.</returns>
-		public static string SignedRequest(NameValueCollection requestParams, bool withSignature = false)
-		{
-			if (requestParams == null)
-				throw new ArgumentNullException("requestParams");
-
-			if (requestParams.AllKeys == null)
-				throw new ArgumentException("requestParams.AllKeys cannot be null.");
-
-			if (!IsValidRequestParameters(requestParams))
-				throw new ArgumentException(string.Format("One of the parameters is missing. parameters: {0}", GetParameters(requestParams)));
-
-			var signedRequest = string.Join("&", requestParams.AllKeys.TakeWhile(key => key != "signature")
-																	  .OrderBy(key => key)
-																	  .Select(key => string.Format("{0}={1}", key, Uri.EscapeDataString(requestParams[key]))));
-
-			if (withSignature && requestParams.AllKeys.Contains("signature"))
-			{
-				signedRequest = string.Format("{0}{1}signature={2}", signedRequest, 
-																	 string.IsNullOrEmpty(signedRequest) ? string.Empty : "&", 
-																	 Uri.EscapeDataString(requestParams["signature"]));
-			}
-			
-			return signedRequest;
-		}
-
-		private static string GetParameters(NameValueCollection requestParams)
-		{
-			if (requestParams == null)
-				return null;
-
-			return string.Join(Environment.NewLine, requestParams.AllKeys.Select(key => string.Format("{0}={1}\r\n", key, requestParams[key])));
-		}
-
-		private static bool IsValidRequestParameters(NameValueCollection requestParams)
-		{
-			var defaultKeys = new [] { "appData", "issuedAt", "locale", "networkEID", "userEID", "signature" };
-
-			return defaultKeys.Length <= requestParams.AllKeys.Intersect(defaultKeys, StringComparer.InvariantCultureIgnoreCase).Count();
-		}
-
-		/// <summary>
-		/// Validates the signature of a signed request.
-		/// </summary>
-		/// <param name="requestParams">Object containing POST parameters passed during the signed request.</param>
-		/// <exception cref="SpeakapSignatureValidationException">Throws a SpeakapSignatureValidationError if the signature doesn't match or the signed request is expired.</exception>
-		public void ValidateSignature(NameValueCollection requestParams)
-		{
-			ValidateSignature(AppSecret, SignatureWindowSize, requestParams);
-		}
-
-		/// <summary>
-		/// Validates the signature of a signed request.
-		/// </summary>
-		/// <param name="appSecret"></param>
-		/// <param name="signatureWindowSize"></param>
-		/// <param name="requestParams"></param>
-		/// <exception cref="SpeakapSignatureValidationException">Throws a SpeakapSignatureValidationError if the signature doesn't match or the signed request is expired.</exception>
-		public static void ValidateSignature(string appSecret, int signatureWindowSize, NameValueCollection requestParams)
-		{
-			if (requestParams == null)
-				throw new ArgumentNullException("requestParams");
-
-			if (requestParams.AllKeys == null)
-				throw new ArgumentException("requestParams.AllKeys cannot be null.");
-
-			if (string.IsNullOrEmpty(appSecret))
-				throw new InvalidOperationException("AppSecret cannot be null.");
-
-			if (!requestParams.AllKeys.Contains("signature"))
-				throw new SpeakapSignatureValidationException("Parameters did not include a signature");
-
-			var signature = requestParams["signature"];
-
-			var queryString = SignedRequest(requestParams);
-			if (string.IsNullOrEmpty(queryString))
-				throw new InvalidOperationException("queryString cannot be null.");
-
-			var hash = new HMACSHA256(Encoding.UTF8.GetBytes(appSecret));
-
-			var buffer = Encoding.UTF8.GetBytes(queryString);
-			var inArray = hash.ComputeHash(buffer);
-			if (inArray == null)
-				throw new InvalidOperationException("inArray cannot be null");
-
-			var computedHash = Convert.ToBase64String(inArray);
-
-			if (computedHash != signature)
-				throw new SpeakapSignatureValidationException(string.Format("Invalid signature."));
-
-			var issuedAt = DateTime.Parse(requestParams["issuedAt"], null, System.Globalization.DateTimeStyles.RoundtripKind);
-			var expiresAt = issuedAt.AddMinutes(signatureWindowSize);
-			if (DateTime.Now > expiresAt)
-				throw new SpeakapSignatureValidationException("Expired signature");
-		}
-
-		/// <summary>
-		/// Get appData from the signed request
-		/// </summary>
-		/// <param name="signedRequest"></param>
-		/// <returns></returns>
-		public static string GetAppData(string signedRequest)
-		{
-			return GetValueFromSignedRequest(signedRequest, "appData");
-		}
-		
-		/// <summary>
-		/// Get networkEID from the signed request
-		/// </summary>
-		/// <param name="signedRequest"></param>
-		/// <returns></returns>
-		public static string GetNetworkEID(string signedRequest)
-		{
-			return GetValueFromSignedRequest(signedRequest, "networkEID");
-		}
-		
-		/// <summary>
-		/// Get userEID from the signed request
-		/// </summary>
-		/// <param name="signedRequest"></param>
-		/// <returns></returns>
-		public static string GetUserEID(string signedRequest)
-		{
-			return GetValueFromSignedRequest(signedRequest, "userEID");
-		}
-		
-		/// <summary>
-		/// Get issuedAt from the signed request
-		/// </summary>
-		/// <param name="signedRequest"></param>
-		/// <returns></returns>
-		public static string GetIssuedAt(string signedRequest)
-		{
-			return GetValueFromSignedRequest(signedRequest, "issuedAt");
-		}
-
-		/// <summary>
-		/// Get locale from the signed request
-		/// </summary>
-		/// <param name="signedRequest"></param>
-		/// <returns></returns>
-		public static string GetLocale(string signedRequest)
-		{
-			return GetValueFromSignedRequest(signedRequest, "locale");
-		}
-
-		private static string GetValueFromSignedRequest(string signedRequest, string key)
-		{
-			if (string.IsNullOrEmpty(signedRequest))
-				return null;
-
-			if (string.IsNullOrEmpty(key))
-				return null;
-
-			// appData=&issuedAt=2014-01-01T00%3A00%3A00.000%2B0000&locale=en-US&networkEID=Fake_networkE1d&userEID=Fake_userE1d
-			var data = signedRequest.Split(new[] { "&" }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault(p => !string.IsNullOrEmpty(p) && p.StartsWith(key));
-
-			if (string.IsNullOrEmpty(data))
-				return null;
-
-			return (data.IndexOf('=') < 0 || data.IndexOf('=') == data.Length) ? string.Empty : data.Substring(data.IndexOf('=') + 1);
-		}
-
-		#endregion - SignedRequest -
-
-		#region - OAuth 2.0 http://developers.speakap.io/portal/auth/oauth2.html -
-
-		/// <summary>
-		/// {
-		///    access_token: "Fake_access_token_1234567",
-		///    expires_in: 3600,
-		///    token_type: "bearer",
-		///    scope: null,
-		///    refresh_token: "Fake_refresh_token_1234567"
-		/// }
-		/// </summary>
-		/// <param name="username"></param>
-		/// <param name="password"></param>
-		/// <param name="clientId"></param>
-		/// <param name="clientSecret"></param>
-		/// <param name="accessToken"></param>
-		/// <param name="refreshToken"></param>
-		/// <returns></returns>
-		public string AcquireAccessToken(string username, string password, string clientId, string clientSecret, out string accessToken, out string refreshToken)
-		{
-			var messageBodyJson = string.Format("'grant_type':\"password\",'username':\"{0}\",'password':\"{1}\",'client_id':\"{2}\",'client_secret':\"{3}\"",
-												username, password, clientId, clientSecret);
-
-			string result = null;
-			var status = OAuth(messageBodyJson, out result);
-
-			accessToken = null;
-			refreshToken = null;
-			if (status == HttpStatusCode.OK)
-			{
-				accessToken = GetJsonPropertyValue(result, "access_token");
-				refreshToken = GetJsonPropertyValue(result, "refresh_token");
-			}
-			
-			return result;
-		}
-
-		/// <summary>
-		/// {
-		///    access_token: "Fake_access_token_1234567",
-		///    expires_in: 3600,
-		///    token_type: "bearer",
-		///    scope: ""
-		/// }
-		/// </summary>
-		/// <param name="refreshToken"></param>
-		/// <param name="clientId"></param>
-		/// <param name="clientSecret"></param>
-		/// <returns></returns>
-		public string RefreshingAccessToken(string refreshToken, string clientId, string clientSecret, out string accessToken)
-		{
-			var messageBodyJson = string.Format("'grant_type':\"refresh_token\",'refresh_token':\"{0}\",'client_id':\"{1}\",'client_secret':\"{2}\"",
-												refreshToken, clientId, clientSecret);
-
-			string result = null;
-			var status = OAuth(messageBodyJson, out result);
-			
-			accessToken = null;
-			if (status == HttpStatusCode.OK)
-			{
-				accessToken = GetJsonPropertyValue(result, "access_token");
-			}
-			
-			return result;
-		}
-
-		private HttpStatusCode OAuth(string messageBody, out string result)
-		{
-			return OAuth(AuthenticatorUri, messageBody, out result);
-		}
-
-		private static HttpStatusCode OAuth(string authenticatorUri, string messageBody, out string result)
-		{
-			var httpWebReq = (HttpWebRequest)WebRequest.Create(authenticatorUri);
-
-			httpWebReq.Method = POST;
-			httpWebReq.Host = new Uri(authenticatorUri).Host;
-			httpWebReq.ContentType = string.Format("{0}; charset=utf-8", SpeakapRequestHeaderConentTypes.ApplicationXWwwFormUrlencoded);
-			httpWebReq.KeepAlive = false;
-			httpWebReq.Headers.Add(HttpRequestHeader.Accept, SpeakapRequestHeaderAccept.ApplicationJson);
-
-			if (!string.IsNullOrEmpty(messageBody))
-			{
-				var buffer = Encoding.UTF8.GetBytes(messageBody);
-
-				httpWebReq.ContentLength = buffer.Length;
-				using (var requestStream = httpWebReq.GetRequestStream())
-				{
-					requestStream.Write(buffer, 0, buffer.Length);
-				}
-			}
-
-			try
-			{
-				var httpWebResp = (HttpWebResponse)httpWebReq.GetResponse();
-
-				using (var stream = httpWebResp.GetResponseStream())
-				{
-					using (var sr = new StreamReader(stream, Encoding.UTF8))
-					{
-						result = sr.ReadToEnd();
-					}
-				}
-				return httpWebResp.StatusCode;
-			}
-			catch (Exception ex)
-			{
-				result = ex.Message;
-			}
-			return HttpStatusCode.BadRequest;
-		}
-
-		private static string GetJsonPropertyValue(string result, string property)
-		{
-			if (string.IsNullOrEmpty(result))
-				return null;
-
-			var index = result.IndexOf(property, StringComparison.InvariantCultureIgnoreCase);
-			if (index < 0)
-				return null;
-
-			index = result.IndexOf(":", index);
-			if (index < 0)
-				return null;
-
-			index = result.IndexOf("\"", index);
-			if (index < 0)
-				return null;
-
-			var endIndex = result.IndexOf("\"", index + 1);
-			if (endIndex < 0)
-				return null;
-
-			return result.Substring(index + 1, endIndex - index - 1);
-		}
-
-		#endregion - OAuth 2.0 -
+		#endregion - Constructors -
 
 		#region - Speakap API http://developers.speakap.io/portal/index.html -
 
@@ -460,7 +105,7 @@ namespace SpeakapAPI
 		public string Delete(string path)
 		{
 			string result = null;
-			var status = Request(DELETE, path, null, out result);
+			var status = Request(HTTP.DELETE, path, null, out result);
 			return HandleResponse(status, result);
 		}
 
@@ -489,7 +134,7 @@ namespace SpeakapAPI
 		public string Get(string path)
 		{
 			string result = null;
-			var status = Request(GET, path, null, out result);
+			var status = Request(HTTP.GET, path, null, out result);
 			return HandleResponse(status, result);
 		}
 
@@ -525,7 +170,7 @@ namespace SpeakapAPI
 		public string Post(string path, string data)
 		{
 			string result = null;
-			var status = Request(POST, path, data, out result);
+			var status = Request(HTTP.POST, path, data, out result);
 			return HandleResponse(status, result);
 		}
 
@@ -557,10 +202,10 @@ namespace SpeakapAPI
 		/// <exception cref="SpeakapAPI.SpeakapApplicationException"></exception>
 		public string PostAction(string path, string data = null)
 		{
-			string result = null; 
+			string result = null;
 			if (!string.IsNullOrEmpty(data))
-				data = HttpUtility.UrlEncode(data);
-			var status = Request(POST, path, data, out result);
+				data = Uri.EscapeDataString(data);
+			var status = Request(HTTP.POST, path, data, out result);
 			return HandleResponse(status, result);
 		}
 
@@ -591,7 +236,7 @@ namespace SpeakapAPI
 		public string Put(string path, string data)
 		{
 			string result = null;
-			var status = Request(PUT, path, data, out result);
+			var status = Request(HTTP.PUT, path, data, out result);
 			return HandleResponse(status, result);
 		}
 
@@ -661,49 +306,8 @@ namespace SpeakapAPI
 
 			throw new SpeakapApplicationException(-1001, string.Format("Status: {0}, Data: {1}", status, data));
 		}
+
+		#endregion - Speakap API -
 		
-		#endregion -  -
-	}
-
-	/// <summary>
-	/// 
-	/// </summary>
-	public static class SpeakapRequestHeaderAccept
-	{
-		/// <summary>
-		/// */*
-		/// </summary>
-		public const string Any = @"*/*";
-		/// <summary>
-		/// application/json
-		/// </summary>
-		public const string ApplicationJson = @"application/json";
-		/// <summary>
-		/// application/vnd.speakap.api-v1.0.19+json
-		/// </summary>
-		public const string ApplicationVndSpeakapApi1019Json = @"application/vnd.speakap.api-v1.0.19+json";
-		/// <summary>
-		/// application/vnd.speakap.api-v1.0.2+json
-		/// </summary>
-		public const string ApplicationVndSpeakapApi102Json = @"application/vnd.speakap.api-v1.0.2+json";
-	}
-
-	/// <summary>
-	/// 
-	/// </summary>
-	public static class SpeakapRequestHeaderConentTypes
-	{
-		/// <summary>
-		/// multipart/form-data
-		/// </summary>
-		public const string MultipartFormData = @"multipart/form-data";
-		/// <summary>
-		/// application/json
-		/// </summary>
-		public const string ApplicationJson = @"application/json";
-		/// <summary>
-		/// application/x-www-form-urlencoded
-		/// </summary>
-		public const string ApplicationXWwwFormUrlencoded = @"application/x-www-form-urlencoded";
 	}
 }
