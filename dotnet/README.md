@@ -2,7 +2,7 @@
 Add the reference assembly Speakap.SDK.dll into your project
 
 # How to use the SDK
-To use the .NET SDK, make sure you add the reference assembly Speakap.SDK.dll, and the include the namespace:
+To use the .NET SDK, make sure you add the reference assembly Speakap.SDK.dll, and then include the namespace:
 ```cs
 using Speakap.SDK
 ```
@@ -12,11 +12,11 @@ try
 {
     var speakap = new Speakap.SDK.SpeakapAPI("https", "api.speakap.io", MY_APP_ID, MY_APP_SECRET);
 
-    string path = string.Format("/networks/{0}/timeline/embed=messages.author", network_eid);
+    var path = string.Format("/networks/{0}/timeline/embed=messages.author", network_eid);
 
-    string response = speakap.Get(path);
+    var response = speakap.Get(path);
 
-    // ... do something with response ...
+    // ... do something with response, it will be the JSON object in string format ...
 }
 catch(SpeakapApplicationException ex)
 {
