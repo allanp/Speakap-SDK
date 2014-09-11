@@ -42,18 +42,16 @@ function signedRequest(params) {
  */
 function validateSignature(params, appSecret) {
 
-    var signature = params.signature;
-
     var keys = _.keys(params);
     keys.sort();
+
     var queryString = _.map(_.without(keys, "signature"), function(key) {
         return percentEncode(key) + "=" + percentEncode(params[key]);
     }).join("&");
 
     var hmac = crypto.createHmac("sha256", appSecret);
     var computedHash = hmac.update(queryString).digest("base64");
-
-    if (computedHash !== signature) {
+    if (computedHash !== params.signature) {
         throw new Error("Invalid signature: " + queryString);
     }
 
@@ -297,23 +295,26 @@ _.extend(API.prototype, {
             res.setEncoding("utf8");
             res.on("data", function(chunk) { responseBody += chunk; });
             res.on("end", function() {
+                var error = null;
+                var result = null;
+
                 try {
                     if (res.statusCode === 204) {
-                        callback(null, true);
+                        result = true;
                     } else if (res.statusCode >= 200 && res.statusCode < 300) {
-                        var result = JSON.parse(responseBody);
-                        callback(null, result);
+                        result = JSON.parse(responseBody);
                     } else {
-                        var error = JSON.parse(responseBody);
-                        callback(error);
+                        error = JSON.parse(responseBody);
                     }
                 } catch(exception) {
-                    callback({
+                    error = {
                         code: -1001,
                         message: "Unexpected Reply",
                         description: responseBody
-                    }, responseBody);
+                    };
                 }
+
+                callback(error, result);
             });
         });
         req.on("error", function(error) {

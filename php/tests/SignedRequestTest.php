@@ -146,12 +146,12 @@ class SignedRequestTest extends \PHPUnit_Framework_TestCase
     public function rawPayLoadProvider()
     {
         return array(
-            array('appData=&issuedAt=2014-04-02T13%3A20%3A09.066%2B0000&locale=en-US&networkEID=08e1e1eadc000e6c&userEID=08e1e1eead0dc968&signature=bx3MowIvCQ+gVp+LvkLQ9eSVMDhiYUUtCjJaCun0GQ4%3D'),
-            array('appData=&issuedAt=2014-04-02T13%3A22%3A09.100%2B0000&locale=en-US&networkEID=08e1e1eadc000e6c&userEID=08e1e1eead0dc968&signature=JqbZW8TRRPF+2crDOuDCNy1lIe08RPaAjkgLRjmupsc%3D'),
-            array('appData=&issuedAt=2014-04-02T13%3A22%3A35.352%2B0000&locale=en-US&networkEID=08e1e1eadc000e6c&userEID=08e1e1eead0dc968&signature=0GZV1GV7Ujz9HRfAp7uO4vqh/NlMvaLABRN5oGpw+9c%3D'),
-            array('appData=&issuedAt=2014-04-02T13%3A22%3A52.278%2B0000&locale=en-US&networkEID=08e1e1eadc000e6c&userEID=08e1e1eead0dc968&signature=ZT9VcEfqsnh0K9ogUoJovQn4qyT1wT1cz/WNzUQIEy8%3D'),
-            array('appData=&issuedAt=2014-04-02T13%3A23%3A16.805%2B0000&locale=en-US&networkEID=08e1e1eadc000e6c&userEID=08e1e1eead0dc968&signature=Lwo0n+sbnyNOQ3xG899eO5jtWKsDtd8vNVxepIEbMrY%3D'),
-            array('appData=&issuedAt=2014-04-02T13%3A23%3A54.824%2B0000&locale=en-US&networkEID=08e1e1eadc000e6c&userEID=08e1e1eead0dc968&signature=pwH3JBVdgBPjwWvaZXYvnqgX%2FRLj6I%2BXeIabqj%2BwkGk%3D'),
+            array('appData=&issuedAt=2014-04-02T13%3A20%3A09.066%2B0000&locale=en-US&role=user&networkEID=08e1e1eadc000e6c&userEID=08e1e1eead0dc968&signature=lqWV60eaUcwhrVX%2FK7llLBzoTwYFh%2Fg78CR0TUHTPmA%3D'),
+            array('appData=&issuedAt=2014-04-02T13%3A22%3A09.100%2B0000&locale=en-US&role=user&networkEID=08e1e1eadc000e6c&userEID=08e1e1eead0dc968&signature=36fezwghQU7tub4FuSGXeT7ggczX95o1oZCp%2BRLR9Fk%3D'),
+            array('appData=&issuedAt=2014-04-02T13%3A22%3A35.352%2B0000&locale=en-US&role=user&networkEID=08e1e1eadc000e6c&userEID=08e1e1eead0dc968&signature=zVGVDMrO7Erm1KjBroVehRKeoeNCnIH6sEc5quX9kOo%3D'),
+            array('appData=&issuedAt=2014-04-02T13%3A22%3A52.278%2B0000&locale=en-US&role=user&networkEID=08e1e1eadc000e6c&userEID=08e1e1eead0dc968&signature=LbP%2BXr%2Bi6kUi7wHtjidTs1nEUnIAS%2FdOJVBjLvyiZko%3D'),
+            array('appData=&issuedAt=2014-04-02T13%3A23%3A16.805%2B0000&locale=en-US&role=user&networkEID=08e1e1eadc000e6c&userEID=08e1e1eead0dc968&signature=vLoL0yr0CkI81Qso7jQOi%2FTmgXTWqe7JVo98dH%2FG59M%3D'),
+            array('appData=&issuedAt=2014-04-02T13%3A23%3A54.824%2B0000&locale=en-US&role=user&networkEID=08e1e1eadc000e6c&userEID=08e1e1eead0dc968&signature=fifTbn8s%2Bhsg0LIiyDbrbf28Xkredi1gFQoqt2LkioM%3D'),
         );
     }
 
@@ -197,6 +197,7 @@ class SignedRequestTest extends \PHPUnit_Framework_TestCase
             'appData' => '',
             'issuedAt' => (new ExtendedDateTime())->format(\DATE_ISO8601),
             'locale' => 'en-US',
+            'role'  =>  'user',
             'networkEID' => '0000000000000001',
             'userEID' => '0000000000000002',
             'signature' => null
