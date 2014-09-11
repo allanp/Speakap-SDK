@@ -25,7 +25,7 @@ catch(SpeakapApplicationException ex)
 
 ```
 or, to validate the signature:
-```C#
+```cs
 try
 {
     var parameters = System.Web.HttpContext.Current.Request.Form.ToDictionary();
@@ -40,7 +40,7 @@ catch(SpeakapSignatureValidationException ex)
 }
 ```
 The ```ToDictionary()``` is an extension method of NameValueCollection as shown below:
-```C#
+```cs
 public static class NameValueCollectionExtensions
 {
     public static IDictionary<string, string> ToDictionary(this NameValueCollection collection)
