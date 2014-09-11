@@ -4,12 +4,12 @@ Add the reference assembly Speakap.SDK.dll into your project
 # How to use the SDK
 To use the .NET SDK, make sure you add the reference assembly Speakap.SDK.dll, and the include the namespace:
 
-'''C#
+'''cs
 using Speakap.SDK
 '''
 
 and then use it as:
-'''C#
+'''cs
 try
 {
     SpeakapAPI speakap = new SpeakapAPI.Speakap("https", "api.speakap.io", MY_APP_ID, MY_APP_SECRET);
@@ -27,7 +27,7 @@ catch(SpeakapApplicationException ex)
 '''
 
 or, to validate the signature:
-'''C#
+'''cs
 try
 {
     var parameters = System.Web.HttpContext.Current.Request.Form.ToDictionary();
@@ -41,8 +41,8 @@ catch(SpeakapSignatureValidationException ex)
     ... do something with error ...
 }
 '''
-The '''C# ToDictionary() ''' is an extension method of NameValueCollection as shown below:
-'''C#
+The '''cs ToDictionary() ''' is an extension method of NameValueCollection as shown below:
+'''cs
 public static class NameValueCollectionExtensions
 {
     public static IDictionary<string,string> ToDictionary(this NameValueCollection collection)
