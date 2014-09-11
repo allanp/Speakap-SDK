@@ -99,7 +99,7 @@ namespace Speakap.SDK
         /// </example>
         /// <param name="path">The path of the REST endpoint, including optional query parameters.</param>
         /// <returns>A JSON string in case of success.</returns>
-        /// <exception cref="SpeakapAPI.SpeakapApplicationException"></exception>
+        /// <exception cref="SpeakapApplicationException"></exception>
         public string Delete(string path)
         {
             string result = null;
@@ -128,7 +128,7 @@ namespace Speakap.SDK
         /// </example>
         /// <param name="path">The path of the REST endpoint, including optional query parameters.</param>
         /// <returns>A JSON string in case of success.</returns>
-        /// <exception cref="SpeakapAPI.SpeakapApplicationException"></exception>
+        /// <exception cref="SpeakapApplicationException"></exception>
         public string Get(string path)
         {
             string result = null;
@@ -164,7 +164,7 @@ namespace Speakap.SDK
         /// <param name="path">The path of the REST endpoint, including optional query parameters.</param>
         /// <param name="data">Object representing the JSON object to submit.</param>
         /// <returns>A JSON string in case of success.</returns>
-        /// <exception cref="SpeakapAPI.SpeakapApplicationException"></exception>
+        /// <exception cref="SpeakapApplicationException"></exception>
         public string Post(string path, string data)
         {
             string result = null;
@@ -197,7 +197,7 @@ namespace Speakap.SDK
         /// <param name="path">The path of the REST endpoint, including optional query parameters.</param>
         /// <param name="data">Optional object containing the form parameters to submit.</param>
         /// <returns>A JSON string in case of success.</returns>
-        /// <exception cref="SpeakapAPI.SpeakapApplicationException"></exception>
+        /// <exception cref="SpeakapApplicationException"></exception>
         public string PostAction(string path, string data = null)
         {
             string result = null;
@@ -230,7 +230,7 @@ namespace Speakap.SDK
         /// <param name="path">The path of the REST endpoint, including optional query parameters.</param>
         /// <param name="data">Optional object containing the form parameters to submit.</param>
         /// <returns>A JSON string in case of success.</returns>
-        /// <exception cref="SpeakapAPI.SpeakapApplicationException"></exception>
+        /// <exception cref="SpeakapApplicationException"></exception>
         public string Put(string path, string data)
         {
             string result = null;

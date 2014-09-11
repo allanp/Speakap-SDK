@@ -55,6 +55,7 @@ namespace Speakap.SDK
         /// request parameters in dictionary&lt;string,string&gt;
         /// </summary>
         /// <param name="parameters"></param>
+        /// <param name="isWithinWindow"></param>
         public void ValidateSignature(IDictionary<string, string> parameters, bool isWithinWindow = true)
         {
             if (parameters == null)
