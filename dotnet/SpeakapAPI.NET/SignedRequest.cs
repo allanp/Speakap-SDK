@@ -28,6 +28,14 @@ namespace SpeakapAPI
 		}
 
 		/// <summary>
+		/// The time in seconds should be added to the remote server time in order to be synchronized with the Speapap server time. Default is 0.
+		/// </summary>
+		/// <example>
+		/// If Speapap server time is 10:00:00, and the remote server time is 10:00:20, then the value should be -20.
+		/// </example>
+		public double TimeDiff { get; set; }
+
+		/// <summary>
 		/// 
 		/// </summary>
 		/// <param name="appSecret"></param>
@@ -39,6 +47,8 @@ namespace SpeakapAPI
 
 			_signatureWindowSize = signatureWindowSize;
 			_hmac = new HMACSHA256(Encoding.UTF8.GetBytes(appSecret));
+
+			TimeDiff = 0;
 		}
 
 		/// <summary>
@@ -59,12 +69,14 @@ namespace SpeakapAPI
 			if (parameters[R.Signature] != GetSignatureFromParameters(parameters))
 				throw new SpeakapSignatureValidationException(string.Format("Invalid signature."));
 
-			if (isWithinWindow)
-			{
-				var issuedAt = DateTime.Parse(parameters[R.IssuedAt], null, System.Globalization.DateTimeStyles.RoundtripKind);
+			if (!isWithinWindow)
+				return;
 
-				if (!IsWithinWindow(_signatureWindowSize, issuedAt))
-					throw new SpeakapSignatureValidationException("Expired signature");
+			var issuedAtUtc = DateTime.Parse(parameters[R.IssuedAt], null, System.Globalization.DateTimeStyles.RoundtripKind).ToUniversalTime();
+
+			if (!IsWithinWindow(_signatureWindowSize, issuedAtUtc.AddSeconds(-TimeDiff)))
+			{
+				throw new SpeakapSignatureValidationException("Expired signature.");
 			}
 		}
 
@@ -128,13 +140,16 @@ namespace SpeakapAPI
 		/// <summary>
 		/// Whether or not the request is within a sane window.
 		/// </summary>
+		/// <remarks>
+		/// Check the absolute Time difference to overcome the local machine time is earlier than the Speakap remote server time
+		/// </remarks>
 		/// <param name="signatureWindowSize">signature window size in seconds</param>
-		/// <param name="issuedAt">UTC date time</param>
+		/// <param name="issuedAtUtc">UTC date time</param>
 		/// <returns></returns>
-		protected static bool IsWithinWindow(long signatureWindowSize, DateTime issuedAt)
+		protected static bool IsWithinWindow(long signatureWindowSize, DateTime issuedAtUtc)
 		{
-			var diff = (DateTime.UtcNow - issuedAt).TotalSeconds;
-			return diff <= signatureWindowSize && diff >= 0;
+			var diff = (DateTime.UtcNow - issuedAtUtc).TotalSeconds;
+			return 0 <= diff && diff <= signatureWindowSize;
 		}
 
 		/// <summary>
