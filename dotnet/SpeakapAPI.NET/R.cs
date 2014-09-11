@@ -1,4 +1,4 @@
-﻿namespace SpeakapAPI
+﻿namespace Speakap.SDK
 {
 	/// <summary>
 	/// 

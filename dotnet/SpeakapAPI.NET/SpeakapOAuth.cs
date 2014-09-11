@@ -3,7 +3,7 @@ using System.IO;
 using System.Net;
 using System.Text;
 
-namespace SpeakapAPI
+namespace Speakap.SDK
 {
 	/// <summary>
 	/// OAuth 2.0 http://developers.speakap.io/portal/auth/oauth2.html

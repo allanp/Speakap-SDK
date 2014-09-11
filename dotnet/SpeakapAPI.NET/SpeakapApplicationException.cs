@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace SpeakapAPI
+namespace Speakap.SDK
 {
 	public class SpeakapApplicationException : Exception
 	{

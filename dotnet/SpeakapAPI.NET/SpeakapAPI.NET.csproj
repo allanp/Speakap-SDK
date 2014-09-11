@@ -8,8 +8,8 @@
     <ProjectGuid>{96D851C0-23DA-4004-AE1C-97A9324115AA}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>SpeakapAPI</RootNamespace>
-    <AssemblyName>SpeakapAPI</AssemblyName>
+    <RootNamespace>Speakap.SDK</RootNamespace>
+    <AssemblyName>Speakap.SDK</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />

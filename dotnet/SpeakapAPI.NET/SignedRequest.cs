@@ -4,7 +4,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace SpeakapAPI
+namespace Speakap.SDK
 {
 	/// <summary>
 	/// http://developers.speakap.io/portal/tutorials/signed_request.html

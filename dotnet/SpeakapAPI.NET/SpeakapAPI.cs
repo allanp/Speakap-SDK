@@ -1,11 +1,9 @@
 ﻿using System;
-using System.Collections.Specialized;
 using System.IO;
 using System.Net;
 using System.Text;
-using System.Web;
 
-namespace SpeakapAPI
+namespace Speakap.SDK
 {
 	/// <summary>
 	/// Speakap API wrapper
@@ -28,7 +26,7 @@ namespace SpeakapAPI
 	///   The response is JSON string result in case of success, it throws a SpeakapAPI.SpeakapApplicationException contains Code and Message in case of error.
 	/// </summary>
 	/// TODO: Add TLS/SSL certificate support
-	public class Speakap
+	public class SpeakapAPI
 	{
 		#region - Constants -
 
@@ -67,7 +65,7 @@ namespace SpeakapAPI
 		/// <param name="hostname"></param>
 		/// <param name="appId"></param>
 		/// <param name="appSecret"></param>
-		public Speakap(string scheme, string hostname, string appId, string appSecret)
+		public SpeakapAPI(string scheme, string hostname, string appId, string appSecret)
 		{
 			Scheme = scheme;
 			Hostname = hostname;

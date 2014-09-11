@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace SpeakapAPI
+namespace Speakap.SDK
 {
 	public static class SignedRequestHelper
 	{

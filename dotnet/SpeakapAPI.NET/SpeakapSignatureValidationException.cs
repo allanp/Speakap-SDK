@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace SpeakapAPI
+namespace Speakap.SDK
 {
 	/// <summary>
 	/// Exception thrown when a signed request is invalid.
