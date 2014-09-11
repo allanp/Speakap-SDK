@@ -44,6 +44,11 @@
     var Speakap = function() {
 
         /**
+         * App data used for opening the lightbox.
+         */
+        this.appData = window.Speakap.appData || "";
+
+        /**
          * The application's app ID.
          */
         this.appId = window.Speakap.appId || "APP ID IS MISSING";
@@ -240,7 +245,9 @@
      *
      * @param options Required options object. May contain the following properties:
      *                appData - App data that should be POSTed with the signed request when loading
-     *                          the lightbox content from a manifest position.
+     *                          the lightbox content from a manifest position. If the third
+     *                          mechanism for loading the content is used, the appData is made
+     *                          available as property under the Speakap object.
      *                buttonPositioning - String "top" or "bottom", depending on whether the given
      *                                    buttons should be displayed in the header or the footer.
      *                                    Default is "top".
@@ -379,6 +386,37 @@
         } else {
             console.log("The host did not expect a reply to this event");
         }
+    };
+
+    /**
+     * Opens a lightbox for selecting a network role.
+     *
+     * @param options Optional options object. May contain the following property:
+     *                context - Context in which to execute the promise callbacks.
+     *                description - Description text informing the user what to do.
+     *
+     * @return jQuery Deferred promise that gets fulfilled when a role is selected, or failed when
+     *         the action is canceled.
+     *
+     * When a role is selected, the promise callback receives a data parameter containing two
+     * properties:
+     *     key - Key of the selected role. This can be an EID of a custom role or a string
+     *           identifier of a predefined role.
+     *     name - Name of the role. This is the name of the role as given by the administrator, or
+     *            the localized name of a predefined role. Because the name is locale-dependent, it
+     *            is only intended for informing the user, and should not be stored for any other
+     *            purposes.
+     */
+    Speakap.prototype.selectRole = function(options) {
+
+        options = options || {};
+
+        return this._call("selectRole", {
+            description: options.description
+        }, {
+            context: options.context,
+            expectResult: true
+        });
     };
 
     /**
