@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Collections;
 
 namespace SpeakapAPI
 {
@@ -57,7 +56,21 @@ namespace SpeakapAPI
 			return GetValueFromSignedRequest(signedRequest, R.Locale);
 		}
 
+		/// <summary>
+		/// Get role from the signed request
+		/// </summary>
+		/// <param name="signedRequest"></param>
+		/// <returns></returns>
+		public static string GetRole(string signedRequest)
+		{
+			return GetValueFromSignedRequest(signedRequest, R.Role);
+		}
 
+		/// <summary>
+		/// Get parameters from a signed request
+		/// </summary>
+		/// <param name="signedRequest"></param>
+		/// <returns></returns>
 		public static IDictionary<string, string> GetParametersFromSignedRequest(string signedRequest)
 		{
 			if (string.IsNullOrEmpty(signedRequest))

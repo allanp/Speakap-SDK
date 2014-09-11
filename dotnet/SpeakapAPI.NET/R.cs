@@ -21,9 +21,10 @@
 		internal const string IssuedAt = "issuedAt";
 		internal const string Locale = "locale";
 		internal const string NetworkEID = "networkEID";
+		internal const string Role = "role";
 		internal const string UserEID = "userEID";
 		internal const string Signature = "signature";
 
-		internal static readonly string[] DefaultKeys = new[] { AppData, IssuedAt, Locale, NetworkEID, UserEID, Signature };
+		internal static readonly string[] DefaultKeys = new[] { AppData, IssuedAt, Locale, NetworkEID, Role, UserEID, Signature };
 	}
 }
