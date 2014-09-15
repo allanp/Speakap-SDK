@@ -16,7 +16,7 @@ namespace SpeakapAPI.NET.Tests
         [TestMethod]
         public void InvalidWindowButValidSecretTest()
         {
-            foreach (DateTime issuedAt in InvalidWindowProvider())
+            foreach (var issuedAt in InvalidWindowProvider())
             {
                 try
                 {
@@ -32,6 +32,24 @@ namespace SpeakapAPI.NET.Tests
                 {
                 }
             }
+
+
+            foreach (var issuedAt in InvalidWindowProvider())
+            {
+                try
+                {
+                    var parameters = GetSignedParameters("secret", new Dictionary<string, string> { { "issuedAt", issuedAt.ToString(ISO8601DateTimeFormat) } });
+
+                    var signedRequest = new SignedRequest("secret", 60);
+
+                    signedRequest.ValidateSignature(parameters, false);
+                }
+                catch (SpeakapSignatureValidationException)
+                {
+                    Assert.Fail();
+                }
+            }
+
         }
 
         /// <summary>
