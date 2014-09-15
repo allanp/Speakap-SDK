@@ -3,6 +3,15 @@ Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpeakapAPI.NET", "SpeakapAPI.NET\SpeakapAPI.NET.csproj", "{96D851C0-23DA-4004-AE1C-97A9324115AA}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpeakapAPI.NET.Tests", "SpeakapAPI.NET.Tests\SpeakapAPI.NET.Tests.csproj", "{0A1B7A7F-9B8E-409B-8028-2ADE42AF5164}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{6B52CB86-0A6D-4D7F-9A58-5F01EF3322DE}"
+	ProjectSection(SolutionItems) = preProject
+		Local.testsettings = Local.testsettings
+		SpeakapAPI.NET.vsmdi = SpeakapAPI.NET.vsmdi
+		TraceAndTestImpact.testsettings = TraceAndTestImpact.testsettings
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(TestCaseManagementSettings) = postSolution
 		CategoryFile = SpeakapAPI.NET.vsmdi
@@ -16,6 +25,10 @@ Global
 		{96D851C0-23DA-4004-AE1C-97A9324115AA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{96D851C0-23DA-4004-AE1C-97A9324115AA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{96D851C0-23DA-4004-AE1C-97A9324115AA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0A1B7A7F-9B8E-409B-8028-2ADE42AF5164}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0A1B7A7F-9B8E-409B-8028-2ADE42AF5164}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0A1B7A7F-9B8E-409B-8028-2ADE42AF5164}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0A1B7A7F-9B8E-409B-8028-2ADE42AF5164}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

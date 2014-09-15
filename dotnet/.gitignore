@@ -20,6 +20,3 @@ _ReSharper.*/
 *.dbmdl
 
 TestResults/
-*.Tests/
-*.vsmdi
-*.testsettings
