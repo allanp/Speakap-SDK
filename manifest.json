@@ -1,0 +1,40 @@
+{
+	"name":	{
+		"en-US": "Dotweb Health",
+		"nl-NL": "Dotweb Verzuim"
+	},
+	"icon":	"https://www.dotwebretailacceptatie.nl/SpeakapProxySite/img/Dotweb_Logo.png",
+	"iconThumbnailUrl":	"https://www.dotwebretailacceptatie.nl/SpeakapProxySite/img/Dotweb_Logo.png",
+	"permissions":	["send_alerts", "invite_users", "get_profile_status", "get_profiles", "post_updates"],
+	"secret":	"something-something",
+	"entries":	[
+			{
+				"position":	"main",
+				"devices":	"all",
+				"url":	"https://www.dotwebretailacceptatie.nl/SpeakapProxySite",
+				"label": { "en-US": "Dotweb	Health", "nl-NL": "Dotweb Verzuim"},
+				"icon":	"\uf0fa"
+			},
+			{
+				"position":	"install-wizard",
+				"devices":	"all",
+				"url":	"https://www.dotwebretailacceptatie.nl/SpeakapProxySite/Install",
+				"label": { "en-US": "Dotweb	Health", "nl-NL": "Dotweb Verzuim"},
+				"icon":	"\uf0fa"
+			},
+			{
+				"position":	"settings-page",
+				"devices":	"all",
+				"url":	"https://www.dotwebretailacceptatie.nl/SpeakapProxySite/Setting",
+				"label": { "en-US": "Dotweb	Health", "nl-NL": "Dotweb Verzuim"},
+				"icon":	"\uf0fa"
+			},
+			{
+				"position":	"request-lightbox",
+				"devices":	"all",
+				"url":	"https://www.dotwebretailacceptatie.nl/SpeakapProxySite/Request",
+				"label": { "en-US": "Dotweb	Health", "nl-NL": "Dotweb Verzuim"},
+				"icon":	"\uf0fa"
+			}
+	]
+}
